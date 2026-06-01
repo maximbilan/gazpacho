@@ -11,7 +11,7 @@ The interactive Telegram user login happens only once on a local machine. Cloud 
 
 ## Current Phase
 
-Phase 1 is complete: repo skeleton, pydantic config, Secrets Manager loader, README setup notes, and `.env.example`.
+Phase 3 is complete in code: the Telethon reader can fetch recent chat history and download image notices. A real-chat run still requires local credentials and a valid `StringSession`.
 
 ## Architecture
 
@@ -110,6 +110,28 @@ python -m venv .venv
 pip install -e ".[dev]"
 pytest
 ```
+
+## One-Time Telegram Login
+
+The Telethon login must run locally because Telegram sends an interactive login code and may require the account's 2FA password. The script uses an in-memory `StringSession`, so it does not create a `.session` file.
+
+Provide `TELEGRAM_API_ID` and `TELEGRAM_API_HASH` in `.env`, or pass them as flags:
+
+```bash
+python scripts/login.py --api-id 123456 --api-hash abcdef123456
+```
+
+The script prints the `StringSession` after successful login. Store that exact value as `telethon_string_session` in AWS Secrets Manager.
+
+## Local Reader Smoke Test
+
+After generating a `StringSession`, put `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `TELETHON_STRING_SESSION`, and `SOURCE_CHAT_IDS` in `.env`, then run:
+
+```bash
+python scripts/read_chats.py
+```
+
+The script prints one normalized JSON message per line and a final JSON object with `message_count`, `image_count`, and the image download directory.
 
 ## Security Notes
 
