@@ -5,7 +5,7 @@ Personal Telegram digest bot for Spanish school updates, summarized in Ukrainian
 Gazpacho has two separate Telegram identities:
 
 - A Telegram user client, implemented with Telethon/MTProto, logs in as the parent's own account and reads the three school chats. This is required because a Telegram bot cannot fetch chat history for chats where it is not present.
-- A normal Telegram bot sends the weekly digest and receives follow-up questions in the parent's private chat.
+- A normal Telegram bot sends the scheduled digest and receives follow-up questions in the parent's private chat.
 
 The interactive Telegram user login happens only once on a local machine. Cloud code receives a pre-created Telethon `StringSession` from AWS Secrets Manager and never asks for a phone number, login code, or 2FA password.
 
@@ -15,11 +15,11 @@ Phase 4 is in progress: Gazpacho uses Amazon Bedrock Claude models for Ukrainian
 
 ## Architecture
 
-Weekly digest flow:
+Scheduled digest flow:
 
 ```text
-EventBridge weekly cron
-  -> WeeklyDigest Lambda container image
+EventBridge cron
+  -> ScheduledDigest Lambda container image
        -> Telethon user client reads the last LOOKBACK_DAYS from source chats
        -> downloads photo/image notices to /tmp
        -> Amazon Bedrock Claude vision model summarizes and translates into Ukrainian
@@ -43,9 +43,9 @@ The webhook Lambda must not import Telethon or have access to Telegram account c
 
 ## Defaults
 
-Claude model IDs are configurable through environment variables. The default provider is Amazon Bedrock, using `eu.anthropic.claude-haiku-4-5-20251001-v1:0` for weekly summaries and `eu.anthropic.claude-sonnet-4-6` for Q&A.
+Claude model IDs are configurable through environment variables. The default provider is Amazon Bedrock, using `eu.anthropic.claude-haiku-4-5-20251001-v1:0` for scheduled summaries and `eu.anthropic.claude-sonnet-4-6` for Q&A.
 
-OpenAI is also supported with `LLM_PROVIDER=openai`. In that mode, set `OPENAI_API_KEY` and use OpenAI model IDs, for example `gpt-4.1-mini` for weekly summaries and `gpt-5-mini` for Q&A.
+OpenAI is also supported with `LLM_PROVIDER=openai`. In that mode, set `OPENAI_API_KEY` and use OpenAI model IDs, for example `gpt-4.1-mini` for scheduled summaries and `gpt-5-mini` for Q&A.
 
 ## Layout
 
@@ -95,7 +95,7 @@ Gazpacho defaults to Claude through Amazon Bedrock, so no separate Anthropic acc
 
 Default model IDs:
 
-- Weekly summaries: `eu.anthropic.claude-haiku-4-5-20251001-v1:0`
+- Scheduled summaries: `eu.anthropic.claude-haiku-4-5-20251001-v1:0`
 - Q&A: `eu.anthropic.claude-sonnet-4-6`
 
 If your AWS region requires a different model ID or cross-region inference profile, override `LLM_MODEL_SUMMARY` and `LLM_MODEL_QA` in environment config.
@@ -112,12 +112,13 @@ Required local/cloud config:
 - `SOURCE_LANG`, default `es`
 - `OUTPUT_LANG`, default `uk`
 - `LOOKBACK_DAYS`, default `7`
+- `SCHEDULE_CRON`, default daily evening UTC cron `cron(0 18 * * ? *)`
 - `LLM_PROVIDER`, default `bedrock`
 - `LLM_MODEL_SUMMARY`
 - `LLM_MODEL_QA`
 - `SECRETS_MANAGER_SECRET_ID`
 - `DYNAMODB_TABLE_NAME`
-- `WEEKLY_DIGEST_FUNCTION_NAME`
+- `SCHEDULED_DIGEST_FUNCTION_NAME`
 
 ## Development
 
@@ -127,6 +128,8 @@ python -m venv .venv
 pip install -e ".[dev]"
 pytest
 ```
+
+Pull requests run the `CI` GitHub Actions workflow, which installs the package on Python 3.12, runs Ruff, compiles Python files, and runs pytest.
 
 ## One-Time Telegram Login
 
@@ -158,7 +161,7 @@ python scripts/read_chats.py
 
 The script prints one normalized JSON message per line and a final JSON object with `message_count`, `image_count`, and the image download directory.
 
-## Local Weekly Digest
+## Local Scheduled Digest
 
 After `.env` has Telegram, target chat, source chat, and LLM settings, run the local end-to-end digest:
 
@@ -183,7 +186,7 @@ Use `--dry-run` to read chats and summarize without sending the digest to Telegr
 2. `scripts/login.py`, one-time interactive Telethon login that prints a usable `StringSession`.
 3. Reader: local run against real chats, normalized messages, image count.
 4. Summarizer: Ukrainian digest from sample data, including image OCR through a vision model.
-5. Notifier plus `weekly_digest_handler`: full local weekly run.
+5. Notifier plus `weekly_digest_handler`: full local scheduled run.
 6. SAM infra: scheduled container Lambda, DynamoDB write verification.
 7. Webhook handler, Q&A bot, and `scripts/set_webhook.py`.
 8. Hardening: error handling, splitting, FloodWait handling, empty-week note, tests, and cost notes.

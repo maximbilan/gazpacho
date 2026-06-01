@@ -14,7 +14,7 @@ if str(ROOT) not in sys.path:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run the weekly digest flow locally.")
+    parser = argparse.ArgumentParser(description="Run the scheduled digest flow locally.")
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -53,7 +53,7 @@ def main() -> int:
         openai_api_key=os.getenv("OPENAI_API_KEY"),
     )
 
-    download_dir = Path(args.download_dir or tempfile.mkdtemp(prefix="gazpacho-weekly-"))
+    download_dir = Path(args.download_dir or tempfile.mkdtemp(prefix="gazpacho-scheduled-"))
     result = asyncio.run(
         run_weekly_digest(
             config,
@@ -63,7 +63,7 @@ def main() -> int:
         )
     )
     print(
-        "weekly_digest_ok "
+        "scheduled_digest_ok "
         f"messages={result.messages_read} "
         f"images={result.images_downloaded} "
         f"digest_chars={result.digest_chars} "
