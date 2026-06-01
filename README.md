@@ -158,6 +158,16 @@ python scripts/read_chats.py
 
 The script prints one normalized JSON message per line and a final JSON object with `message_count`, `image_count`, and the image download directory.
 
+## Local Weekly Digest
+
+After `.env` has Telegram, target chat, source chat, and LLM settings, run the local end-to-end digest:
+
+```bash
+python scripts/run_weekly_digest.py
+```
+
+Use `--dry-run` to read chats and summarize without sending the digest to Telegram.
+
 ## Security Notes
 
 - Never commit `.env` or any secret values.

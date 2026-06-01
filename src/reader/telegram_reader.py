@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 
 def parse_chat_ref(value: str) -> str | int:
     stripped = value.strip()
+    if stripped.startswith("@@"):
+        stripped = "@" + stripped.lstrip("@")
     if stripped.lstrip("-").isdigit():
         return int(stripped)
     return stripped
