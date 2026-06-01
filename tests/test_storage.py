@@ -52,3 +52,23 @@ def test_store_digest_run_writes_run_and_latest_items() -> None:
     assert "path" not in run_item["images"][0]
     assert latest_item["run_id"] == stored.run_id
     assert storage.get_latest_digest_run()["summary"] == "Дайджест"
+
+
+def test_append_conversation_turn_caps_recent_messages() -> None:
+    table = FakeTable()
+    storage = DigestStorage("ignored", table=table)
+
+    storage.append_conversation_turn(chat_id="123", question="one", answer="two", max_messages=3)
+    messages = storage.append_conversation_turn(
+        chat_id="123",
+        question="three",
+        answer="four",
+        max_messages=3,
+    )
+
+    assert messages == [
+        {"role": "assistant", "text": "two"},
+        {"role": "user", "text": "three"},
+        {"role": "assistant", "text": "four"},
+    ]
+    assert storage.get_recent_conversation("123") == messages

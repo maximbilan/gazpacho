@@ -77,6 +77,11 @@ Globals:
         WEEKLY_DIGEST_FUNCTION_NAME: !Ref ScheduledDigestFunctionName
 
 Resources:
+  GazpachoHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref EnvironmentName
+
   GazpachoTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -125,8 +130,50 @@ Resources:
             Schedule: !Sub cron(${ScheduleMinute} ${ScheduleHour} * * ? *)
             Enabled: true
 
+  WebhookFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-webhook
+      CodeUri: ..
+      Handler: src.handlers.webhook_handler.handler
+      Runtime: python3.12
+      Timeout: 30
+      MemorySize: 512
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoDbTableName
+        - Statement:
+            Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource: !Sub arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretsManagerSecretId}-*
+        - Statement:
+            Effect: Allow
+            Action:
+              - lambda:InvokeFunction
+            Resource: !GetAtt ScheduledDigestFunction.Arn
+        - Statement:
+            Effect: Allow
+            Action:
+              - bedrock:Converse
+              - bedrock:InvokeModel
+            Resource: "*"
+      Events:
+        TelegramWebhook:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GazpachoHttpApi
+            Path: /telegram/webhook
+            Method: POST
+
 Outputs:
   ScheduledDigestFunctionName:
     Value: !Ref ScheduledDigestFunction
   DynamoDbTableName:
     Value: !Ref GazpachoTable
+  WebhookFunctionName:
+    Value: !Ref WebhookFunction
+  WebhookUrl:
+    Value: !Sub https://${GazpachoHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${EnvironmentName}/telegram/webhook

@@ -11,6 +11,8 @@ from src.reader.models import DownloadedImage, NormalizedMessage
 
 RUN_PK = "RUN"
 LATEST_SK = "LATEST"
+CONVERSATION_PK_PREFIX = "CONVERSATION#"
+CONVERSATION_SK = "RECENT"
 
 
 @dataclass(frozen=True)
@@ -87,3 +89,45 @@ class DigestStorage:
 
         run_response = self.table.get_item(Key={"pk": RUN_PK, "sk": run_id})
         return run_response.get("Item")
+
+    def get_recent_conversation(self, chat_id: str) -> list[dict[str, str]]:
+        response = self.table.get_item(
+            Key={"pk": f"{CONVERSATION_PK_PREFIX}{chat_id}", "sk": CONVERSATION_SK}
+        )
+        item = response.get("Item") or {}
+        messages = item.get("recent_messages", [])
+        if not isinstance(messages, list):
+            return []
+        return [
+            {"role": str(message.get("role", "")), "text": str(message.get("text", ""))}
+            for message in messages
+            if isinstance(message, dict) and message.get("role") and message.get("text")
+        ]
+
+    def append_conversation_turn(
+        self,
+        *,
+        chat_id: str,
+        question: str,
+        answer: str,
+        max_messages: int = 10,
+    ) -> list[dict[str, str]]:
+        recent_messages = self.get_recent_conversation(chat_id)
+        recent_messages.extend(
+            [
+                {"role": "user", "text": question},
+                {"role": "assistant", "text": answer},
+            ]
+        )
+        recent_messages = recent_messages[-max_messages:]
+        self.table.put_item(
+            Item={
+                "pk": f"{CONVERSATION_PK_PREFIX}{chat_id}",
+                "sk": CONVERSATION_SK,
+                "entity_type": "conversation",
+                "chat_id": chat_id,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "recent_messages": recent_messages,
+            }
+        )
+        return recent_messages
