@@ -11,7 +11,7 @@ The interactive Telegram user login happens only once on a local machine. Cloud 
 
 ## Current Phase
 
-Phase 3 is complete in code: the Telethon reader can fetch recent chat history and download image notices. A real-chat run still requires local credentials and a valid `StringSession`.
+Phase 4 is in progress: Gazpacho uses Amazon Bedrock Claude models for Ukrainian summaries, including image inputs for school notices.
 
 ## Architecture
 
@@ -22,7 +22,7 @@ EventBridge weekly cron
   -> WeeklyDigest Lambda container image
        -> Telethon user client reads the last LOOKBACK_DAYS from source chats
        -> downloads photo/image notices to /tmp
-       -> Anthropic vision model summarizes and translates into Ukrainian
+       -> Amazon Bedrock Claude vision model summarizes and translates into Ukrainian
        -> Telegram Bot API sends digest to TARGET_CHAT_ID
        -> DynamoDB stores raw messages and generated digest
 ```
@@ -35,7 +35,7 @@ Telegram bot webhook
   -> Webhook Lambda zip
        -> verifies Telegram secret-token header
        -> reads latest digest, raw messages, and short chat history from DynamoDB
-       -> Anthropic answers in Ukrainian
+       -> Amazon Bedrock Claude answers in Ukrainian
        -> Telegram Bot API replies
 ```
 
@@ -43,7 +43,7 @@ The webhook Lambda must not import Telethon or have access to Telegram account c
 
 ## Defaults
 
-Anthropic model IDs are configurable through environment variables. The default routine weekly summary model is `claude-haiku-4-5-20251001`; the default Q&A model is `claude-sonnet-4-6`.
+Claude model IDs are configurable through environment variables. The default provider is Amazon Bedrock, using `anthropic.claude-haiku-4-5-20251001-v1:0` for weekly summaries and `anthropic.claude-sonnet-4-6` for Q&A.
 
 ## Layout
 
@@ -72,8 +72,7 @@ tests             focused unit tests
   "telegram_api_hash": "from-my.telegram.org",
   "telethon_string_session": "printed-by-scripts-login",
   "telegram_bot_token": "from-botfather",
-  "telegram_webhook_secret": "random-secret-token",
-  "anthropic_api_key": "sk-ant-..."
+  "telegram_webhook_secret": "random-secret-token"
 }
 ```
 
@@ -82,6 +81,22 @@ tests             focused unit tests
 8. Message the bot with `/start` to confirm the private chat's `chat_id`, then set `TARGET_CHAT_ID`.
 
 AWS SSM Parameter Store `SecureString` can replace Secrets Manager later if you want the cheapest possible secret storage at this scale.
+
+## Amazon Bedrock Setup
+
+Gazpacho defaults to Claude through Amazon Bedrock, so no separate Anthropic account or API key is required.
+
+1. In AWS Console, open **Amazon Bedrock** in the region you plan to use.
+2. Enable model access for the configured Claude models.
+3. For local runs, authenticate with AWS credentials that can call Bedrock Runtime.
+4. For Lambda, grant the execution role permission for `bedrock:Converse` and `bedrock:InvokeModel`.
+
+Default model IDs:
+
+- Weekly summaries: `anthropic.claude-haiku-4-5-20251001-v1:0`
+- Q&A: `anthropic.claude-sonnet-4-6`
+
+If your AWS region requires a different model ID or cross-region inference profile, override `LLM_MODEL_SUMMARY` and `LLM_MODEL_QA` in environment config.
 
 ## Environment
 
@@ -95,7 +110,7 @@ Required local/cloud config:
 - `SOURCE_LANG`, default `es`
 - `OUTPUT_LANG`, default `uk`
 - `LOOKBACK_DAYS`, default `7`
-- `LLM_PROVIDER`, default `anthropic`
+- `LLM_PROVIDER`, default `bedrock`
 - `LLM_MODEL_SUMMARY`
 - `LLM_MODEL_QA`
 - `SECRETS_MANAGER_SECRET_ID`
@@ -144,9 +159,10 @@ The script prints one normalized JSON message per line and a final JSON object w
 ## Security Notes
 
 - Never commit `.env` or any secret values.
-- Do not log the Telethon string session, bot token, webhook secret, or Anthropic API key.
+- Do not log the Telethon string session, bot token, webhook secret, or direct-provider API keys.
 - Do not log full school message bodies at info level.
-- The Q&A Lambda needs only bot, webhook, Anthropic, and DynamoDB access. It must not receive Telegram account credentials.
+- The Q&A Lambda needs only bot, webhook, Bedrock, and DynamoDB access. It must not receive Telegram account credentials.
+- With `LLM_PROVIDER=bedrock`, Lambdas use IAM permissions for `bedrock:InvokeModel` and `bedrock:Converse`; no Anthropic API key is needed.
 
 ## Build Phases
 

@@ -8,8 +8,8 @@ from typing import Literal
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
 
-DEFAULT_SUMMARY_MODEL = "claude-haiku-4-5-20251001"
-DEFAULT_QA_MODEL = "claude-sonnet-4-6"
+DEFAULT_SUMMARY_MODEL = "anthropic.claude-haiku-4-5-20251001-v1:0"
+DEFAULT_QA_MODEL = "anthropic.claude-sonnet-4-6"
 
 
 class AppConfig(BaseModel):
@@ -20,7 +20,7 @@ class AppConfig(BaseModel):
     output_lang: str = "uk"
     schedule_cron: str = "cron(0 6 ? * MON *)"
     lookback_days: int = Field(default=7, ge=1, le=31)
-    llm_provider: Literal["anthropic"] = "anthropic"
+    llm_provider: Literal["bedrock", "anthropic"] = "bedrock"
     llm_model_summary: str = DEFAULT_SUMMARY_MODEL
     llm_model_qa: str = DEFAULT_QA_MODEL
     aws_region: str | None = None
@@ -75,7 +75,7 @@ def config_from_env(load_local_env: bool = True) -> AppConfig:
         "output_lang": os.getenv("OUTPUT_LANG", "uk"),
         "schedule_cron": os.getenv("SCHEDULE_CRON", "cron(0 6 ? * MON *)"),
         "lookback_days": os.getenv("LOOKBACK_DAYS", "7"),
-        "llm_provider": os.getenv("LLM_PROVIDER", "anthropic"),
+        "llm_provider": os.getenv("LLM_PROVIDER", "bedrock"),
         "llm_model_summary": os.getenv("LLM_MODEL_SUMMARY", DEFAULT_SUMMARY_MODEL),
         "llm_model_qa": os.getenv("LLM_MODEL_QA", DEFAULT_QA_MODEL),
         "aws_region": os.getenv("AWS_REGION"),
@@ -89,4 +89,3 @@ def config_from_env(load_local_env: bool = True) -> AppConfig:
         return AppConfig.model_validate(data)
     except ValidationError as exc:
         raise RuntimeError(f"Invalid Gazpacho configuration: {exc}") from exc
-
