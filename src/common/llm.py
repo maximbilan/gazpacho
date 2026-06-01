@@ -116,13 +116,16 @@ class OpenAILLMClient:
 
         content.append({"type": "input_text", "text": user_text})
 
-        response = self.client.responses.create(
-            model=model_id,
-            instructions=system_prompt,
-            input=[{"role": "user", "content": content}],
-            max_output_tokens=max_tokens,
-            temperature=temperature,
-        )
+        request: dict[str, Any] = {
+            "model": model_id,
+            "instructions": system_prompt,
+            "input": [{"role": "user", "content": content}],
+            "max_output_tokens": max_tokens,
+        }
+        if _openai_model_supports_temperature(model_id):
+            request["temperature"] = temperature
+
+        response = self.client.responses.create(**request)
         return _extract_openai_text(response)
 
 
@@ -177,6 +180,11 @@ def _extract_openai_text(response: Any) -> str:
                 text_parts.append(text)
 
     return "\n".join(text_parts).strip()
+
+
+def _openai_model_supports_temperature(model_id: str) -> bool:
+    model = model_id.lower()
+    return not model.startswith(("gpt-5", "o1", "o3", "o4"))
 
 
 def make_llm_client(
