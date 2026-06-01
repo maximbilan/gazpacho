@@ -58,7 +58,8 @@ jobs:
           AWS_REGION: ${{ vars.AWS_REGION || 'eu-west-1' }}
           SOURCE_CHAT_IDS: ${{ vars.SOURCE_CHAT_IDS }}
           TARGET_CHAT_ID: ${{ vars.TARGET_CHAT_ID }}
-          SCHEDULE_CRON: ${{ vars.SCHEDULE_CRON || 'cron(0 18 * * ? *)' }}
+          SCHEDULE_MINUTE: ${{ vars.SCHEDULE_MINUTE || '0' }}
+          SCHEDULE_HOUR: ${{ vars.SCHEDULE_HOUR || '18' }}
           LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'openai' }}
           LLM_MODEL_SUMMARY: ${{ vars.LLM_MODEL_SUMMARY || 'gpt-4.1-mini' }}
           LLM_MODEL_QA: ${{ vars.LLM_MODEL_QA || 'gpt-5-mini' }}
@@ -80,7 +81,8 @@ jobs:
               "ParameterKey=ScheduledDigestFunctionName,ParameterValue=$SCHEDULED_DIGEST_FUNCTION_NAME" \
               "ParameterKey=SourceChatIds,ParameterValue=$SOURCE_CHAT_IDS" \
               "ParameterKey=TargetChatId,ParameterValue=$TARGET_CHAT_ID" \
-              "ParameterKey=ScheduleCron,ParameterValue=$SCHEDULE_CRON" \
+              "ParameterKey=ScheduleMinute,ParameterValue=$SCHEDULE_MINUTE" \
+              "ParameterKey=ScheduleHour,ParameterValue=$SCHEDULE_HOUR" \
               "ParameterKey=LlmProvider,ParameterValue=$LLM_PROVIDER" \
               "ParameterKey=LlmModelSummary,ParameterValue=$LLM_MODEL_SUMMARY" \
               "ParameterKey=LlmModelQa,ParameterValue=$LLM_MODEL_QA" \
