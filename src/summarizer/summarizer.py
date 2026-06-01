@@ -15,9 +15,13 @@ EMPTY_WEEK_DIGEST = (
 
 
 class Summarizer:
-    def __init__(self, config: AppConfig) -> None:
+    def __init__(self, config: AppConfig, openai_api_key: str | None = None) -> None:
         self.config = config
-        self.llm = make_llm_client(config.llm_provider, region_name=config.aws_region)
+        self.llm = make_llm_client(
+            config.llm_provider,
+            region_name=config.aws_region,
+            openai_api_key=openai_api_key,
+        )
 
     def summarize(
         self,

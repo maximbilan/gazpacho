@@ -20,7 +20,7 @@ class AppConfig(BaseModel):
     output_lang: str = "uk"
     schedule_cron: str = "cron(0 6 ? * MON *)"
     lookback_days: int = Field(default=7, ge=1, le=31)
-    llm_provider: Literal["bedrock", "anthropic"] = "bedrock"
+    llm_provider: Literal["bedrock", "openai", "anthropic"] = "bedrock"
     llm_model_summary: str = DEFAULT_SUMMARY_MODEL
     llm_model_qa: str = DEFAULT_QA_MODEL
     aws_region: str | None = None
