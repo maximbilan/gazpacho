@@ -1,0 +1,2 @@
+"""Gazpacho application package."""
+
