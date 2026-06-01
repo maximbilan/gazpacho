@@ -76,13 +76,13 @@ jobs:
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
             --parameter-overrides \
-              EnvironmentName="${{ inputs.environment_name }}" \
-              ScheduledDigestFunctionName="$SCHEDULED_DIGEST_FUNCTION_NAME" \
-              SourceChatIds="$SOURCE_CHAT_IDS" \
-              TargetChatId="$TARGET_CHAT_ID" \
-              ScheduleCron="$SCHEDULE_CRON" \
-              LlmProvider="$LLM_PROVIDER" \
-              LlmModelSummary="$LLM_MODEL_SUMMARY" \
-              LlmModelQa="$LLM_MODEL_QA" \
-              SecretsManagerSecretId="$SECRETS_MANAGER_SECRET_ID" \
-              DynamoDbTableName="$DYNAMODB_TABLE_NAME"
+              "ParameterKey=EnvironmentName,ParameterValue=${{ inputs.environment_name }}" \
+              "ParameterKey=ScheduledDigestFunctionName,ParameterValue=$SCHEDULED_DIGEST_FUNCTION_NAME" \
+              "ParameterKey=SourceChatIds,ParameterValue=$SOURCE_CHAT_IDS" \
+              "ParameterKey=TargetChatId,ParameterValue=$TARGET_CHAT_ID" \
+              "ParameterKey=ScheduleCron,ParameterValue=$SCHEDULE_CRON" \
+              "ParameterKey=LlmProvider,ParameterValue=$LLM_PROVIDER" \
+              "ParameterKey=LlmModelSummary,ParameterValue=$LLM_MODEL_SUMMARY" \
+              "ParameterKey=LlmModelQa,ParameterValue=$LLM_MODEL_QA" \
+              "ParameterKey=SecretsManagerSecretId,ParameterValue=$SECRETS_MANAGER_SECRET_ID" \
+              "ParameterKey=DynamoDbTableName,ParameterValue=$DYNAMODB_TABLE_NAME"
