@@ -1,0 +1,78 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      stack_name:
+        description: CloudFormation stack name
+        default: gazpacho
+        required: true
+      environment_name:
+        description: Deployment environment name
+        default: prod
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    name: Deploy SAM stack
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: ${{ inputs.environment_name }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up SAM
+        uses: aws-actions/setup-sam@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION || 'eu-west-1' }}
+
+      - name: Build SAM app
+        run: sam build --template-file infra/template.yaml
+
+      - name: Deploy SAM app
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION || 'eu-west-1' }}
+          SOURCE_CHAT_IDS: ${{ vars.SOURCE_CHAT_IDS }}
+          TARGET_CHAT_ID: ${{ vars.TARGET_CHAT_ID }}
+          SCHEDULE_CRON: ${{ vars.SCHEDULE_CRON || 'cron(0 18 * * ? *)' }}
+          LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'openai' }}
+          LLM_MODEL_SUMMARY: ${{ vars.LLM_MODEL_SUMMARY || 'gpt-4.1-mini' }}
+          LLM_MODEL_QA: ${{ vars.LLM_MODEL_QA || 'gpt-5-mini' }}
+          SECRETS_MANAGER_SECRET_ID: ${{ vars.SECRETS_MANAGER_SECRET_ID || 'gazpacho/secrets' }}
+          DYNAMODB_TABLE_NAME: ${{ vars.DYNAMODB_TABLE_NAME || 'gazpacho' }}
+          SCHEDULED_DIGEST_FUNCTION_NAME: ${{ vars.SCHEDULED_DIGEST_FUNCTION_NAME || 'gazpacho-scheduled-digest' }}
+        run: |
+          sam deploy \
+            --template-file .aws-sam/build/template.yaml \
+            --stack-name "${{ inputs.stack_name }}" \
+            --region "$AWS_REGION" \
+            --capabilities CAPABILITY_IAM \
+            --resolve-image-repos \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --parameter-overrides \
+              EnvironmentName="${{ inputs.environment_name }}" \
+              ScheduledDigestFunctionName="$SCHEDULED_DIGEST_FUNCTION_NAME" \
+              SourceChatIds="$SOURCE_CHAT_IDS" \
+              TargetChatId="$TARGET_CHAT_ID" \
+              ScheduleCron="$SCHEDULE_CRON" \
+              LlmProvider="$LLM_PROVIDER" \
+              LlmModelSummary="$LLM_MODEL_SUMMARY" \
+              LlmModelQa="$LLM_MODEL_QA" \
+              SecretsManagerSecretId="$SECRETS_MANAGER_SECRET_ID" \
+              DynamoDbTableName="$DYNAMODB_TABLE_NAME"

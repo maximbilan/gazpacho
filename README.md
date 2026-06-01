@@ -11,7 +11,7 @@ The interactive Telegram user login happens only once on a local machine. Cloud 
 
 ## Current Phase
 
-Phase 4 is in progress: Gazpacho uses Amazon Bedrock Claude models for Ukrainian summaries, including image inputs for school notices.
+Current state: Gazpacho can run the scheduled digest locally end to end, uses OpenAI by default for Ukrainian summaries with image inputs, and has SAM/GitHub Actions deployment scaffolding.
 
 ## Architecture
 
@@ -22,7 +22,7 @@ EventBridge cron
   -> ScheduledDigest Lambda container image
        -> Telethon user client reads the last LOOKBACK_DAYS from source chats
        -> downloads photo/image notices to /tmp
-       -> Amazon Bedrock Claude vision model summarizes and translates into Ukrainian
+       -> configured vision LLM summarizes and translates into Ukrainian
        -> Telegram Bot API sends digest to TARGET_CHAT_ID
        -> DynamoDB stores raw messages and generated digest
 ```
@@ -35,7 +35,7 @@ Telegram bot webhook
   -> Webhook Lambda zip
        -> verifies Telegram secret-token header
        -> reads latest digest, raw messages, and short chat history from DynamoDB
-       -> Amazon Bedrock Claude answers in Ukrainian
+       -> configured LLM answers in Ukrainian
        -> Telegram Bot API replies
 ```
 
@@ -43,9 +43,9 @@ The webhook Lambda must not import Telethon or have access to Telegram account c
 
 ## Defaults
 
-Claude model IDs are configurable through environment variables. The default provider is Amazon Bedrock, using `eu.anthropic.claude-haiku-4-5-20251001-v1:0` for scheduled summaries and `eu.anthropic.claude-sonnet-4-6` for Q&A.
+Model IDs are configurable through environment variables. The default provider is OpenAI, using `gpt-4.1-mini` for scheduled summaries and `gpt-5-mini` for Q&A.
 
-OpenAI is also supported with `LLM_PROVIDER=openai`. In that mode, set `OPENAI_API_KEY` and use OpenAI model IDs, for example `gpt-4.1-mini` for scheduled summaries and `gpt-5-mini` for Q&A.
+Amazon Bedrock is also supported with `LLM_PROVIDER=bedrock`. In that mode, use Bedrock model or inference-profile IDs and grant the Lambda role Bedrock Runtime permissions.
 
 ## Layout
 
@@ -74,11 +74,12 @@ tests             focused unit tests
   "telegram_api_hash": "from-my.telegram.org",
   "telethon_string_session": "printed-by-scripts-login",
   "telegram_bot_token": "from-botfather",
-  "telegram_webhook_secret": "random-secret-token"
+  "telegram_webhook_secret": "random-secret-token",
+  "openai_api_key": "sk-proj-..."
 }
 ```
 
-6. Build and push the reader container image, then run `sam deploy` from the SAM stack once infra is added.
+6. Configure the GitHub `Deploy` workflow variables, or run `sam build` and `sam deploy` locally from `infra/template.yaml`.
 7. Run `scripts/set_webhook.py` to point Telegram at the API Gateway URL with the secret token.
 8. Message the bot with `/start` to confirm the private chat's `chat_id`, then set `TARGET_CHAT_ID`.
 
@@ -86,7 +87,7 @@ AWS SSM Parameter Store `SecureString` can replace Secrets Manager later if you 
 
 ## Amazon Bedrock Setup
 
-Gazpacho defaults to Claude through Amazon Bedrock, so no separate Anthropic account or API key is required.
+Gazpacho can use Claude through Amazon Bedrock if you prefer AWS-native model access.
 
 1. In AWS Console, open **Amazon Bedrock** in the region you plan to use.
 2. Enable model access for the configured Claude models.
@@ -113,7 +114,7 @@ Required local/cloud config:
 - `OUTPUT_LANG`, default `uk`
 - `LOOKBACK_DAYS`, default `7`
 - `SCHEDULE_CRON`, default daily evening UTC cron `cron(0 18 * * ? *)`
-- `LLM_PROVIDER`, default `bedrock`
+- `LLM_PROVIDER`, default `openai`
 - `LLM_MODEL_SUMMARY`
 - `LLM_MODEL_QA`
 - `SECRETS_MANAGER_SECRET_ID`
@@ -130,6 +131,28 @@ pytest
 ```
 
 Pull requests run the `CI` GitHub Actions workflow, which installs the package on Python 3.12, runs Ruff, compiles Python files, and runs pytest.
+
+## Deployment
+
+The `Deploy` GitHub Actions workflow deploys the SAM stack manually through `workflow_dispatch`.
+
+Required GitHub environment or repository variables:
+
+- `AWS_ROLE_TO_ASSUME`
+- `AWS_REGION`, default `eu-west-1`
+- `SOURCE_CHAT_IDS`
+- `TARGET_CHAT_ID`
+- `SCHEDULE_CRON`, default `cron(0 18 * * ? *)`
+- `LLM_PROVIDER`, default `openai`
+- `LLM_MODEL_SUMMARY`, default `gpt-4.1-mini`
+- `LLM_MODEL_QA`, default `gpt-5-mini`
+- `SECRETS_MANAGER_SECRET_ID`, default `gazpacho/secrets`
+- `DYNAMODB_TABLE_NAME`, default `gazpacho`
+- `SCHEDULED_DIGEST_FUNCTION_NAME`, default `gazpacho-scheduled-digest`
+
+The AWS role must trust GitHub OIDC for this repository and allow SAM/CloudFormation, ECR, Lambda, EventBridge, DynamoDB, IAM role creation for the stack, and Secrets Manager read permissions for the configured secret.
+
+The scheduled digest Lambda is deployed as a container image from `infra/Dockerfile`.
 
 ## One-Time Telegram Login
 
@@ -171,12 +194,18 @@ python scripts/run_weekly_digest.py
 
 Use `--dry-run` to read chats and summarize without sending the digest to Telegram.
 
+Use `--store` to also write the digest run to DynamoDB:
+
+```bash
+python scripts/run_weekly_digest.py --store
+```
+
 ## Security Notes
 
 - Never commit `.env` or any secret values.
 - Do not log the Telethon string session, bot token, webhook secret, or direct-provider API keys.
 - Do not log full school message bodies at info level.
-- The Q&A Lambda needs only bot, webhook, Bedrock, and DynamoDB access. It must not receive Telegram account credentials.
+- The Q&A Lambda needs only bot, webhook, LLM-provider, and DynamoDB access. It must not receive Telegram account credentials.
 - With `LLM_PROVIDER=bedrock`, Lambdas use IAM permissions for `bedrock:InvokeModel` and `bedrock:Converse`; no Anthropic API key is needed.
 - With `LLM_PROVIDER=openai`, store `OPENAI_API_KEY` in Secrets Manager and do not grant Bedrock permissions.
 

@@ -25,6 +25,11 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Directory for downloaded Telegram images; defaults to a temp directory",
     )
+    parser.add_argument(
+        "--store",
+        action="store_true",
+        help="Store the digest run in DynamoDB using DYNAMODB_TABLE_NAME",
+    )
     return parser.parse_args()
 
 
@@ -39,6 +44,7 @@ def main() -> int:
     args = parse_args()
 
     from src.common.config import config_from_env
+    from src.common.storage import DigestStorage
     from src.handlers.weekly_digest_handler import (
         WeeklyDigestCredentials,
         run_weekly_digest,
@@ -54,12 +60,18 @@ def main() -> int:
     )
 
     download_dir = Path(args.download_dir or tempfile.mkdtemp(prefix="gazpacho-scheduled-"))
+    storage = (
+        DigestStorage(config.dynamodb_table_name, region_name=config.aws_region)
+        if args.store
+        else None
+    )
     result = asyncio.run(
         run_weekly_digest(
             config,
             credentials,
             download_dir=download_dir,
             send_digest=not args.dry_run,
+            storage=storage,
         )
     )
     print(
@@ -68,6 +80,7 @@ def main() -> int:
         f"images={result.images_downloaded} "
         f"digest_chars={result.digest_chars} "
         f"telegram_parts={result.telegram_parts_sent} "
+        f"stored_run_id={result.stored_run_id or ''} "
         f"download_dir={download_dir}"
     )
     return 0
