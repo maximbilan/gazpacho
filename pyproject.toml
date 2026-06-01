@@ -8,6 +8,7 @@ dependencies = [
     "boto3>=1.34.0",
     "httpx>=0.27.0",
     "pydantic>=2.8.0",
+    "qrcode>=7.4.0",
     "telethon>=1.36.0",
 ]
 
@@ -24,4 +25,3 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-

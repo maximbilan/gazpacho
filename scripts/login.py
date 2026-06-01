@@ -77,6 +77,23 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--api-hash", default=None, help="Telegram API hash from my.telegram.org")
     parser.add_argument("--phone", default=None, help="Phone number in international format")
+    parser.add_argument(
+        "--qr",
+        action="store_true",
+        help="Log in by scanning a QR code from an already logged-in Telegram app",
+    )
+    parser.add_argument(
+        "--qr-timeout",
+        type=float,
+        default=60,
+        help="Seconds to wait for each QR scan attempt",
+    )
+    parser.add_argument(
+        "--qr-attempts",
+        type=int,
+        default=3,
+        help="How many QR codes to show before giving up",
+    )
     parser.add_argument("--env-file", default=".env", help="Path to a local .env file")
     return parser.parse_args()
 
@@ -110,23 +127,81 @@ def read_api_hash(value: str | None) -> str:
     return getpass.getpass("Telegram api_hash: ").strip()
 
 
+def print_qr_login_url(url: str) -> None:
+    try:
+        import qrcode
+    except ModuleNotFoundError:
+        print(
+            "qrcode is not installed, so only the login URL can be shown.",
+            file=sys.stderr,
+        )
+        print("Install dependencies with: pip install -e \".[dev]\"", file=sys.stderr)
+        print(f"\nOpen this Telegram login URL on an already logged-in device:\n{url}\n")
+        return
+
+    qr = qrcode.QRCode(border=1)
+    qr.add_data(url)
+    qr.make(fit=True)
+    qr.print_ascii(tty=True)
+    print(
+        "\nScan this QR code with Telegram on a device where the parent account "
+        "is already logged in.",
+        file=sys.stderr,
+    )
+    print("Telegram mobile: Settings > Devices > Link Desktop Device.", file=sys.stderr)
+
+
+async def sign_in_with_qr(client: Any, deps: TelethonDeps, timeout: float, attempts: int) -> None:
+    if attempts < 1:
+        raise SystemExit("--qr-attempts must be at least 1")
+    if timeout <= 0:
+        raise SystemExit("--qr-timeout must be greater than 0")
+
+    qr_login = await client.qr_login()
+    for attempt in range(1, attempts + 1):
+        print(f"\nQR login attempt {attempt}/{attempts}", file=sys.stderr)
+        print_qr_login_url(qr_login.url)
+
+        try:
+            await qr_login.wait(timeout=timeout)
+            return
+        except deps.session_password_needed_error:
+            password = getpass.getpass("Telegram 2FA password: ")
+            await client.sign_in(password=password)
+            return
+        except asyncio.TimeoutError:
+            if attempt >= attempts:
+                raise SystemExit("QR login timed out before the code was scanned")
+            print("QR code expired or was not scanned; generating a new one.", file=sys.stderr)
+            await qr_login.recreate()
+
+
 async def create_string_session(
-    api_id: int, api_hash: str, phone: str | None, deps: TelethonDeps
+    api_id: int,
+    api_hash: str,
+    phone: str | None,
+    use_qr: bool,
+    qr_timeout: float,
+    qr_attempts: int,
+    deps: TelethonDeps,
 ) -> str:
     client = deps.telegram_client(deps.string_session(), api_id, api_hash)
     await client.connect()
 
     try:
         if not await client.is_user_authorized():
-            phone_number = phone or input("Phone number, including country code: ").strip()
-            await client.send_code_request(phone_number)
-            code = input("Telegram login code: ").strip().replace(" ", "")
+            if use_qr:
+                await sign_in_with_qr(client, deps, qr_timeout, qr_attempts)
+            else:
+                phone_number = phone or input("Phone number, including country code: ").strip()
+                await client.send_code_request(phone_number)
+                code = input("Telegram login code: ").strip().replace(" ", "")
 
-            try:
-                await client.sign_in(phone=phone_number, code=code)
-            except deps.session_password_needed_error:
-                password = getpass.getpass("Telegram 2FA password: ")
-                await client.sign_in(password=password)
+                try:
+                    await client.sign_in(phone=phone_number, code=code)
+                except deps.session_password_needed_error:
+                    password = getpass.getpass("Telegram 2FA password: ")
+                    await client.sign_in(password=password)
 
         me = await client.get_me()
         username = f"@{me.username}" if getattr(me, "username", None) else "(no username)"
@@ -148,7 +223,15 @@ async def async_main() -> int:
     deps = load_telethon()
 
     try:
-        session = await create_string_session(api_id, api_hash, args.phone, deps)
+        session = await create_string_session(
+            api_id,
+            api_hash,
+            args.phone,
+            args.qr,
+            args.qr_timeout,
+            args.qr_attempts,
+            deps,
+        )
     except deps.api_id_invalid_error as exc:
         raise SystemExit("Telegram rejected the api_id/api_hash pair") from exc
     except deps.phone_number_invalid_error as exc:
