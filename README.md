@@ -45,6 +45,8 @@ The webhook Lambda must not import Telethon or have access to Telegram account c
 
 Claude model IDs are configurable through environment variables. The default provider is Amazon Bedrock, using `eu.anthropic.claude-haiku-4-5-20251001-v1:0` for weekly summaries and `eu.anthropic.claude-sonnet-4-6` for Q&A.
 
+OpenAI is also supported with `LLM_PROVIDER=openai`. In that mode, set `OPENAI_API_KEY` and use OpenAI model IDs, for example `gpt-4.1-mini` for weekly summaries and `gpt-5-mini` for Q&A.
+
 ## Layout
 
 ```text
@@ -163,6 +165,7 @@ The script prints one normalized JSON message per line and a final JSON object w
 - Do not log full school message bodies at info level.
 - The Q&A Lambda needs only bot, webhook, Bedrock, and DynamoDB access. It must not receive Telegram account credentials.
 - With `LLM_PROVIDER=bedrock`, Lambdas use IAM permissions for `bedrock:InvokeModel` and `bedrock:Converse`; no Anthropic API key is needed.
+- With `LLM_PROVIDER=openai`, store `OPENAI_API_KEY` in Secrets Manager and do not grant Bedrock permissions.
 
 ## Build Phases
 

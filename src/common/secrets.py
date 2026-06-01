@@ -18,6 +18,7 @@ class GazpachoSecrets(BaseModel):
     telegram_bot_token: str | None = Field(default=None, min_length=1)
     telegram_webhook_secret: str | None = Field(default=None, min_length=1)
     anthropic_api_key: str | None = Field(default=None, min_length=1)
+    openai_api_key: str | None = Field(default=None, min_length=1)
 
     def require_reader(self) -> "ReaderSecrets":
         return ReaderSecrets.model_validate(self.model_dump())
@@ -27,6 +28,9 @@ class GazpachoSecrets(BaseModel):
 
     def require_webhook(self) -> "WebhookSecrets":
         return WebhookSecrets.model_validate(self.model_dump())
+
+    def require_openai(self) -> "OpenAISecrets":
+        return OpenAISecrets.model_validate(self.model_dump())
 
 
 class ReaderSecrets(BaseModel):
@@ -43,6 +47,10 @@ class BotSecrets(BaseModel):
 class WebhookSecrets(BaseModel):
     telegram_bot_token: str
     telegram_webhook_secret: str
+
+
+class OpenAISecrets(BaseModel):
+    openai_api_key: str
 
 
 class SecretsManagerLoader:
