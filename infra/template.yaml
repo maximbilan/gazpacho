@@ -1,0 +1,129 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Gazpacho scheduled Telegram school digest.
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: prod
+  ScheduledDigestFunctionName:
+    Type: String
+    Default: gazpacho-scheduled-digest
+  SourceChatIds:
+    Type: String
+    Description: Comma-separated Telegram source chat refs.
+  TargetChatId:
+    Type: String
+    Description: Telegram target chat ID for the digest.
+  Timezone:
+    Type: String
+    Default: Europe/Madrid
+  SourceLang:
+    Type: String
+    Default: es
+  OutputLang:
+    Type: String
+    Default: uk
+  LookbackDays:
+    Type: Number
+    Default: 7
+  ScheduleCron:
+    Type: String
+    Default: cron(0 18 * * ? *)
+  LlmProvider:
+    Type: String
+    Default: openai
+    AllowedValues:
+      - openai
+      - bedrock
+      - anthropic
+  LlmModelSummary:
+    Type: String
+    Default: gpt-4.1-mini
+  LlmModelQa:
+    Type: String
+    Default: gpt-5-mini
+  SecretsManagerSecretId:
+    Type: String
+    Default: gazpacho/secrets
+  DynamoDbTableName:
+    Type: String
+    Default: gazpacho
+
+Globals:
+  Function:
+    Timeout: 900
+    MemorySize: 1024
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        SOURCE_CHAT_IDS: !Ref SourceChatIds
+        TARGET_CHAT_ID: !Ref TargetChatId
+        TIMEZONE: !Ref Timezone
+        SOURCE_LANG: !Ref SourceLang
+        OUTPUT_LANG: !Ref OutputLang
+        LOOKBACK_DAYS: !Ref LookbackDays
+        SCHEDULE_CRON: !Ref ScheduleCron
+        LLM_PROVIDER: !Ref LlmProvider
+        LLM_MODEL_SUMMARY: !Ref LlmModelSummary
+        LLM_MODEL_QA: !Ref LlmModelQa
+        SECRETS_MANAGER_SECRET_ID: !Ref SecretsManagerSecretId
+        DYNAMODB_TABLE_NAME: !Ref DynamoDbTableName
+        SCHEDULED_DIGEST_FUNCTION_NAME: !Ref ScheduledDigestFunctionName
+        WEEKLY_DIGEST_FUNCTION_NAME: !Ref ScheduledDigestFunctionName
+
+Resources:
+  GazpachoTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref DynamoDbTableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+
+  ScheduledDigestFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      DockerContext: ..
+      Dockerfile: infra/Dockerfile
+      DockerTag: scheduled-digest
+    Properties:
+      FunctionName: !Ref ScheduledDigestFunctionName
+      PackageType: Image
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoDbTableName
+        - Statement:
+            Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource: !Sub arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretsManagerSecretId}-*
+        - Statement:
+            Effect: Allow
+            Action:
+              - bedrock:Converse
+              - bedrock:InvokeModel
+            Resource: "*"
+      Events:
+        ScheduledDigest:
+          Type: Schedule
+          Properties:
+            Name: !Sub ${AWS::StackName}-scheduled-digest
+            Description: Run the Gazpacho scheduled digest.
+            Schedule: !Ref ScheduleCron
+            Enabled: true
+
+Outputs:
+  ScheduledDigestFunctionName:
+    Value: !Ref ScheduledDigestFunction
+  DynamoDbTableName:
+    Value: !Ref GazpachoTable

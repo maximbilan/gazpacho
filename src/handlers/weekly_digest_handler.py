@@ -11,6 +11,7 @@ from typing import Any
 
 from src.common.config import AppConfig, config_from_env
 from src.common.secrets import SecretsManagerLoader
+from src.common.storage import DigestStorage
 from src.notifier.telegram_bot import TelegramBotNotifier
 from src.reader.telegram_reader import TelegramReader
 from src.summarizer.summarizer import Summarizer
@@ -35,6 +36,7 @@ class WeeklyDigestResult:
     images_downloaded: int
     digest_chars: int
     telegram_parts_sent: int
+    stored_run_id: str | None = None
 
 
 async def run_weekly_digest(
@@ -43,6 +45,7 @@ async def run_weekly_digest(
     *,
     download_dir: Path,
     send_digest: bool = True,
+    storage: DigestStorage | None = None,
 ) -> WeeklyDigestResult:
     async with TelegramReader(
         credentials.telegram_api_id,
@@ -74,11 +77,23 @@ async def run_weekly_digest(
         finally:
             notifier.close()
 
+    stored_run_id = None
+    if storage is not None:
+        stored_run = storage.store_digest_run(
+            summary=digest,
+            raw_messages=reader_result.messages,
+            images=reader_result.images,
+            lookback_days=config.lookback_days,
+        )
+        stored_run_id = stored_run.run_id
+        logger.info("Stored digest run %s", stored_run_id)
+
     return WeeklyDigestResult(
         messages_read=len(reader_result.messages),
         images_downloaded=len(reader_result.images),
         digest_chars=len(digest),
         telegram_parts_sent=parts_sent,
+        stored_run_id=stored_run_id,
     )
 
 
@@ -102,6 +117,12 @@ def handler(event: dict[str, Any], _context: Any) -> dict[str, Any]:
     )
 
     send_digest = not bool(event.get("dry_run"))
+    store_digest = not bool(event.get("skip_storage"))
+    storage = (
+        DigestStorage(config.dynamodb_table_name, region_name=config.aws_region)
+        if store_digest
+        else None
+    )
     with TemporaryDirectory(prefix="gazpacho-scheduled-") as temp_dir:
         result = asyncio.run(
             run_weekly_digest(
@@ -109,6 +130,7 @@ def handler(event: dict[str, Any], _context: Any) -> dict[str, Any]:
                 credentials,
                 download_dir=Path(temp_dir),
                 send_digest=send_digest,
+                storage=storage,
             )
         )
 
@@ -120,6 +142,7 @@ def handler(event: dict[str, Any], _context: Any) -> dict[str, Any]:
                 "images_downloaded": result.images_downloaded,
                 "digest_chars": result.digest_chars,
                 "telegram_parts_sent": result.telegram_parts_sent,
+                "stored_run_id": result.stored_run_id,
             }
         ),
     }
