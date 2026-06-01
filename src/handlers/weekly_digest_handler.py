@@ -73,7 +73,8 @@ async def run_weekly_digest(
     if send_digest:
         notifier = TelegramBotNotifier(credentials.telegram_bot_token)
         try:
-            parts_sent = notifier.send_text(config.target_chat_id, digest).parts_sent
+            for target_chat_id in config.target_chat_ids:
+                parts_sent += notifier.send_text(target_chat_id, digest).parts_sent
         finally:
             notifier.close()
 

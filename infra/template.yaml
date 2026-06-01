@@ -12,9 +12,9 @@ Parameters:
   SourceChatIds:
     Type: String
     Description: Comma-separated Telegram source chat refs.
-  TargetChatId:
+  TargetChatIds:
     Type: String
-    Description: Telegram target chat ID for the digest.
+    Description: Comma-separated Telegram target chat IDs for the digest and Q&A.
   Timezone:
     Type: String
     Default: Europe/Madrid
@@ -62,7 +62,8 @@ Globals:
     Environment:
       Variables:
         SOURCE_CHAT_IDS: !Ref SourceChatIds
-        TARGET_CHAT_ID: !Ref TargetChatId
+        TARGET_CHAT_IDS: !Ref TargetChatIds
+        TARGET_CHAT_ID: !Ref TargetChatIds
         TIMEZONE: !Ref Timezone
         SOURCE_LANG: !Ref SourceLang
         OUTPUT_LANG: !Ref OutputLang
