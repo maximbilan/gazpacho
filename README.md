@@ -113,7 +113,8 @@ Required local/cloud config:
 - `SOURCE_LANG`, default `es`
 - `OUTPUT_LANG`, default `uk`
 - `LOOKBACK_DAYS`, default `7`
-- `SCHEDULE_CRON`, default daily evening UTC cron `cron(0 18 * * ? *)`
+- `SCHEDULE_HOUR`, default `18` UTC
+- `SCHEDULE_MINUTE`, default `0`
 - `LLM_PROVIDER`, default `openai`
 - `LLM_MODEL_SUMMARY`
 - `LLM_MODEL_QA`
@@ -138,11 +139,12 @@ The `Deploy` GitHub Actions workflow deploys the SAM stack manually through `wor
 
 Required GitHub environment or repository variables:
 
-- `AWS_ROLE_TO_ASSUME`
+- `AWS_ROLE_TO_ASSUME` for OIDC, or `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` secrets
 - `AWS_REGION`, default `eu-west-1`
 - `SOURCE_CHAT_IDS`
 - `TARGET_CHAT_ID`
-- `SCHEDULE_CRON`, default `cron(0 18 * * ? *)`
+- `SCHEDULE_HOUR`, default `18` UTC
+- `SCHEDULE_MINUTE`, default `0`
 - `LLM_PROVIDER`, default `openai`
 - `LLM_MODEL_SUMMARY`, default `gpt-4.1-mini`
 - `LLM_MODEL_QA`, default `gpt-5-mini`

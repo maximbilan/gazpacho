@@ -27,9 +27,12 @@ Parameters:
   LookbackDays:
     Type: Number
     Default: 7
-  ScheduleCron:
+  ScheduleMinute:
     Type: String
-    Default: cron(0 18 * * ? *)
+    Default: "0"
+  ScheduleHour:
+    Type: String
+    Default: "18"
   LlmProvider:
     Type: String
     Default: openai
@@ -64,7 +67,7 @@ Globals:
         SOURCE_LANG: !Ref SourceLang
         OUTPUT_LANG: !Ref OutputLang
         LOOKBACK_DAYS: !Ref LookbackDays
-        SCHEDULE_CRON: !Ref ScheduleCron
+        SCHEDULE_CRON: !Sub cron(${ScheduleMinute} ${ScheduleHour} * * ? *)
         LLM_PROVIDER: !Ref LlmProvider
         LLM_MODEL_SUMMARY: !Ref LlmModelSummary
         LLM_MODEL_QA: !Ref LlmModelQa
@@ -119,7 +122,7 @@ Resources:
           Properties:
             Name: !Sub ${AWS::StackName}-scheduled-digest
             Description: Run the Gazpacho scheduled digest.
-            Schedule: !Ref ScheduleCron
+            Schedule: !Sub cron(${ScheduleMinute} ${ScheduleHour} * * ? *)
             Enabled: true
 
 Outputs:
