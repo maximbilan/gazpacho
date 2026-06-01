@@ -63,7 +63,14 @@ def handler(event: dict[str, Any], _context: Any) -> dict[str, Any]:
             logger.info("Ignoring non-target chat_id %s", chat_id)
             notifier.send_text(chat_id, f"Цей бот налаштований для іншого chat_id.\nchat_id: {chat_id}")
         else:
-            answer = _answer_question(config, secrets.openai_api_key, chat_id, text)
+            try:
+                answer = _answer_question(config, secrets.openai_api_key, chat_id, text)
+            except Exception:
+                logger.exception("Failed to answer Telegram Q&A message")
+                answer = (
+                    "Не вдалося відповісти через технічну помилку. "
+                    "Я вже записав помилку в логи, спробуй ще раз трохи пізніше."
+                )
             notifier.send_text(chat_id, answer)
     finally:
         notifier.close()

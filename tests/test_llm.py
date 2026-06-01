@@ -100,3 +100,18 @@ def test_openai_client_builds_responses_request_with_image(tmp_path: Path) -> No
     assert content[0]["type"] == "input_image"
     assert content[0]["image_url"] == "data:image/jpeg;base64,ZmFrZS1pbWFnZQ=="
     assert content[1] == {"type": "input_text", "text": "summarize"}
+
+
+def test_openai_client_omits_temperature_for_gpt5_models() -> None:
+    fake_client = FakeOpenAIClient()
+    llm = OpenAILLMClient(client=fake_client)
+
+    result = llm.complete(
+        model_id="gpt-5-mini",
+        system_prompt="system",
+        user_text="answer",
+        temperature=0.1,
+    )
+
+    assert result == "Український дайджест"
+    assert "temperature" not in fake_client.responses.request
