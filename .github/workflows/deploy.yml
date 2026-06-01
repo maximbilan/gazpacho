@@ -35,10 +35,19 @@ jobs:
       - name: Set up SAM
         uses: aws-actions/setup-sam@v2
 
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials with OIDC
+        if: ${{ vars.AWS_ROLE_TO_ASSUME != '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION || 'eu-west-1' }}
+
+      - name: Configure AWS credentials with access keys
+        if: ${{ vars.AWS_ROLE_TO_ASSUME == '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_REGION || 'eu-west-1' }}
 
       - name: Build SAM app
