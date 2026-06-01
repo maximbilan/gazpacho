@@ -155,6 +155,21 @@ Required GitHub environment or repository variables:
 The AWS role must trust GitHub OIDC for this repository and allow SAM/CloudFormation, ECR, Lambda, EventBridge, DynamoDB, IAM role creation for the stack, and Secrets Manager read permissions for the configured secret.
 
 The scheduled digest Lambda is deployed as a container image from `infra/Dockerfile`.
+The Telegram webhook Lambda is deployed as a lean zip package and intentionally does not import Telethon.
+
+After a successful deploy, register the webhook with the `WebhookUrl` stack output:
+
+```bash
+python scripts/set_webhook.py \
+  --profile gazpacho-deploy \
+  --region eu-west-1 \
+  --url "$(aws cloudformation describe-stacks \
+    --profile gazpacho-deploy \
+    --region eu-west-1 \
+    --stack-name gazpacho \
+    --query 'Stacks[0].Outputs[?OutputKey==`WebhookUrl`].OutputValue' \
+    --output text)"
+```
 
 ## One-Time Telegram Login
 
