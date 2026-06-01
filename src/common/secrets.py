@@ -34,18 +34,15 @@ class ReaderSecrets(BaseModel):
     telegram_api_hash: str
     telethon_string_session: str
     telegram_bot_token: str
-    anthropic_api_key: str
 
 
 class BotSecrets(BaseModel):
     telegram_bot_token: str
-    anthropic_api_key: str
 
 
 class WebhookSecrets(BaseModel):
     telegram_bot_token: str
     telegram_webhook_secret: str
-    anthropic_api_key: str
 
 
 class SecretsManagerLoader:
@@ -81,4 +78,3 @@ class SecretsManagerLoader:
 
         logger.info("Loaded Gazpacho secret metadata from Secrets Manager")
         return GazpachoSecrets.model_validate(payload)
-
