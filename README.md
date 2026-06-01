@@ -123,6 +123,14 @@ python scripts/login.py --api-id 123456 --api-hash abcdef123456
 
 The script prints the `StringSession` after successful login. Store that exact value as `telethon_string_session` in AWS Secrets Manager.
 
+If Telegram does not send a login code, use QR login from an already logged-in Telegram mobile app:
+
+```bash
+python scripts/login.py --qr
+```
+
+Scan the terminal QR code from Telegram mobile using **Settings > Devices > Link Desktop Device**. If the account has 2FA enabled, the script will still ask for the 2FA password after the QR scan.
+
 ## Local Reader Smoke Test
 
 After generating a `StringSession`, put `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `TELETHON_STRING_SESSION`, and `SOURCE_CHAT_IDS` in `.env`, then run:
