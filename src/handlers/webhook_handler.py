@@ -59,7 +59,7 @@ def handler(event: dict[str, Any], _context: Any) -> dict[str, Any]:
                 chat_id,
                 "Запустив оновлення. Коли дайджест буде готовий, я надішлю його сюди.",
             )
-        elif chat_id != config.target_chat_id:
+        elif chat_id not in config.target_chat_ids:
             logger.info("Ignoring non-target chat_id %s", chat_id)
             notifier.send_text(chat_id, f"Цей бот налаштований для іншого chat_id.\nchat_id: {chat_id}")
         else:

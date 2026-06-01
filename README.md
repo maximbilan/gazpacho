@@ -23,7 +23,7 @@ EventBridge cron
        -> Telethon user client reads the last LOOKBACK_DAYS from source chats
        -> downloads photo/image notices to /tmp
        -> configured vision LLM summarizes and translates into Ukrainian
-       -> Telegram Bot API sends digest to TARGET_CHAT_ID
+       -> Telegram Bot API sends digest to TARGET_CHAT_IDS
        -> DynamoDB stores raw messages and generated digest
 ```
 
@@ -81,7 +81,7 @@ tests             focused unit tests
 
 6. Configure the GitHub `Deploy` workflow variables, or run `sam build` and `sam deploy` locally from `infra/template.yaml`.
 7. Run `scripts/set_webhook.py` to point Telegram at the API Gateway URL with the secret token.
-8. Message the bot with `/start` to confirm the private chat's `chat_id`, then set `TARGET_CHAT_ID`.
+8. Message the bot with `/start` to confirm each private chat's `chat_id`, then set `TARGET_CHAT_IDS`.
 
 AWS SSM Parameter Store `SecureString` can replace Secrets Manager later if you want the cheapest possible secret storage at this scale.
 
@@ -108,7 +108,7 @@ If your AWS region requires a different model ID or cross-region inference profi
 Required local/cloud config:
 
 - `SOURCE_CHAT_IDS`
-- `TARGET_CHAT_ID`
+- `TARGET_CHAT_IDS`
 - `TIMEZONE`, default `Europe/Madrid`
 - `SOURCE_LANG`, default `es`
 - `OUTPUT_LANG`, default `uk`
@@ -142,7 +142,7 @@ Required GitHub environment or repository variables:
 - `AWS_ROLE_TO_ASSUME` for OIDC, or `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` secrets
 - `AWS_REGION`, default `eu-west-1`
 - `SOURCE_CHAT_IDS`
-- `TARGET_CHAT_ID`
+- `TARGET_CHAT_IDS`
 - `SCHEDULE_HOUR`, default `18` UTC
 - `SCHEDULE_MINUTE`, default `0`
 - `LLM_PROVIDER`, default `openai`

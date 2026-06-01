@@ -57,7 +57,7 @@ jobs:
         env:
           AWS_REGION: ${{ vars.AWS_REGION || 'eu-west-1' }}
           SOURCE_CHAT_IDS: ${{ vars.SOURCE_CHAT_IDS }}
-          TARGET_CHAT_ID: ${{ vars.TARGET_CHAT_ID }}
+          TARGET_CHAT_IDS: ${{ vars.TARGET_CHAT_IDS || vars.TARGET_CHAT_ID }}
           SCHEDULE_MINUTE: ${{ vars.SCHEDULE_MINUTE || '0' }}
           SCHEDULE_HOUR: ${{ vars.SCHEDULE_HOUR || '18' }}
           LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'openai' }}
@@ -80,7 +80,7 @@ jobs:
               "ParameterKey=EnvironmentName,ParameterValue=${{ inputs.environment_name }}" \
               "ParameterKey=ScheduledDigestFunctionName,ParameterValue=$SCHEDULED_DIGEST_FUNCTION_NAME" \
               "ParameterKey=SourceChatIds,ParameterValue=$SOURCE_CHAT_IDS" \
-              "ParameterKey=TargetChatId,ParameterValue=$TARGET_CHAT_ID" \
+              "ParameterKey=TargetChatIds,ParameterValue=$TARGET_CHAT_IDS" \
               "ParameterKey=ScheduleMinute,ParameterValue=$SCHEDULE_MINUTE" \
               "ParameterKey=ScheduleHour,ParameterValue=$SCHEDULE_HOUR" \
               "ParameterKey=LlmProvider,ParameterValue=$LLM_PROVIDER" \

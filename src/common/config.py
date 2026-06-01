@@ -14,7 +14,7 @@ DEFAULT_QA_MODEL = "gpt-5-mini"
 
 class AppConfig(BaseModel):
     source_chat_ids: list[str] = Field(min_length=1)
-    target_chat_id: str = Field(min_length=1)
+    target_chat_ids: list[str] = Field(min_length=1)
     timezone: str = "Europe/Madrid"
     source_lang: str = "es"
     output_lang: str = "uk"
@@ -32,19 +32,32 @@ class AppConfig(BaseModel):
     @field_validator("source_chat_ids", mode="before")
     @classmethod
     def parse_source_chat_ids(cls, value: object) -> list[str]:
-        if isinstance(value, list):
-            return [str(item).strip() for item in value if str(item).strip()]
-        if isinstance(value, str):
-            stripped = value.strip()
-            if not stripped:
-                return []
-            if stripped.startswith("["):
-                parsed = json.loads(stripped)
-                if not isinstance(parsed, list):
-                    raise ValueError("SOURCE_CHAT_IDS JSON must be a list")
-                return [str(item).strip() for item in parsed if str(item).strip()]
-            return [item.strip() for item in stripped.split(",") if item.strip()]
-        raise ValueError("SOURCE_CHAT_IDS must be a comma-separated string or JSON list")
+        return _parse_string_list(value, "SOURCE_CHAT_IDS")
+
+    @field_validator("target_chat_ids", mode="before")
+    @classmethod
+    def parse_target_chat_ids(cls, value: object) -> list[str]:
+        return _parse_string_list(value, "TARGET_CHAT_IDS")
+
+    @property
+    def target_chat_id(self) -> str:
+        return self.target_chat_ids[0]
+
+
+def _parse_string_list(value: object, env_name: str) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped:
+            return []
+        if stripped.startswith("["):
+            parsed = json.loads(stripped)
+            if not isinstance(parsed, list):
+                raise ValueError(f"{env_name} JSON must be a list")
+            return [str(item).strip() for item in parsed if str(item).strip()]
+        return [item.strip() for item in stripped.split(",") if item.strip()]
+    raise ValueError(f"{env_name} must be a comma-separated string or JSON list")
 
 
 def load_dotenv(path: str | Path = ".env") -> None:
@@ -70,7 +83,7 @@ def config_from_env(load_local_env: bool = True) -> AppConfig:
 
     data = {
         "source_chat_ids": os.getenv("SOURCE_CHAT_IDS", ""),
-        "target_chat_id": os.getenv("TARGET_CHAT_ID", ""),
+        "target_chat_ids": os.getenv("TARGET_CHAT_IDS") or os.getenv("TARGET_CHAT_ID", ""),
         "timezone": os.getenv("TIMEZONE", "Europe/Madrid"),
         "source_lang": os.getenv("SOURCE_LANG", "es"),
         "output_lang": os.getenv("OUTPUT_LANG", "uk"),
