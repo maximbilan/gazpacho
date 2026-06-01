@@ -102,7 +102,7 @@ def handler(event: dict[str, Any], _context: Any) -> dict[str, Any]:
     )
 
     send_digest = not bool(event.get("dry_run"))
-    with TemporaryDirectory(prefix="gazpacho-weekly-") as temp_dir:
+    with TemporaryDirectory(prefix="gazpacho-scheduled-") as temp_dir:
         result = asyncio.run(
             run_weekly_digest(
                 config,

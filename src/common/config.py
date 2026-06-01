@@ -18,7 +18,7 @@ class AppConfig(BaseModel):
     timezone: str = "Europe/Madrid"
     source_lang: str = "es"
     output_lang: str = "uk"
-    schedule_cron: str = "cron(0 6 ? * MON *)"
+    schedule_cron: str = "cron(0 18 * * ? *)"
     lookback_days: int = Field(default=7, ge=1, le=31)
     llm_provider: Literal["bedrock", "openai", "anthropic"] = "bedrock"
     llm_model_summary: str = DEFAULT_SUMMARY_MODEL
@@ -26,6 +26,7 @@ class AppConfig(BaseModel):
     aws_region: str | None = None
     secrets_manager_secret_id: str = Field(default="gazpacho/secrets", min_length=1)
     dynamodb_table_name: str = Field(default="gazpacho", min_length=1)
+    scheduled_digest_function_name: str | None = None
     weekly_digest_function_name: str | None = None
 
     @field_validator("source_chat_ids", mode="before")
@@ -73,7 +74,7 @@ def config_from_env(load_local_env: bool = True) -> AppConfig:
         "timezone": os.getenv("TIMEZONE", "Europe/Madrid"),
         "source_lang": os.getenv("SOURCE_LANG", "es"),
         "output_lang": os.getenv("OUTPUT_LANG", "uk"),
-        "schedule_cron": os.getenv("SCHEDULE_CRON", "cron(0 6 ? * MON *)"),
+        "schedule_cron": os.getenv("SCHEDULE_CRON", "cron(0 18 * * ? *)"),
         "lookback_days": os.getenv("LOOKBACK_DAYS", "7"),
         "llm_provider": os.getenv("LLM_PROVIDER", "bedrock"),
         "llm_model_summary": os.getenv("LLM_MODEL_SUMMARY", DEFAULT_SUMMARY_MODEL),
@@ -83,7 +84,10 @@ def config_from_env(load_local_env: bool = True) -> AppConfig:
             "SECRETS_MANAGER_SECRET_ID", "gazpacho/secrets"
         ),
         "dynamodb_table_name": os.getenv("DYNAMODB_TABLE_NAME", "gazpacho"),
-        "weekly_digest_function_name": os.getenv("WEEKLY_DIGEST_FUNCTION_NAME"),
+        "scheduled_digest_function_name": os.getenv("SCHEDULED_DIGEST_FUNCTION_NAME")
+        or os.getenv("WEEKLY_DIGEST_FUNCTION_NAME"),
+        "weekly_digest_function_name": os.getenv("WEEKLY_DIGEST_FUNCTION_NAME")
+        or os.getenv("SCHEDULED_DIGEST_FUNCTION_NAME"),
     }
     try:
         return AppConfig.model_validate(data)
