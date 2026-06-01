@@ -43,7 +43,7 @@ The webhook Lambda must not import Telethon or have access to Telegram account c
 
 ## Defaults
 
-Claude model IDs are configurable through environment variables. The default provider is Amazon Bedrock, using `anthropic.claude-haiku-4-5-20251001-v1:0` for weekly summaries and `anthropic.claude-sonnet-4-6` for Q&A.
+Claude model IDs are configurable through environment variables. The default provider is Amazon Bedrock, using `eu.anthropic.claude-haiku-4-5-20251001-v1:0` for weekly summaries and `eu.anthropic.claude-sonnet-4-6` for Q&A.
 
 ## Layout
 
@@ -93,8 +93,8 @@ Gazpacho defaults to Claude through Amazon Bedrock, so no separate Anthropic acc
 
 Default model IDs:
 
-- Weekly summaries: `anthropic.claude-haiku-4-5-20251001-v1:0`
-- Q&A: `anthropic.claude-sonnet-4-6`
+- Weekly summaries: `eu.anthropic.claude-haiku-4-5-20251001-v1:0`
+- Q&A: `eu.anthropic.claude-sonnet-4-6`
 
 If your AWS region requires a different model ID or cross-region inference profile, override `LLM_MODEL_SUMMARY` and `LLM_MODEL_QA` in environment config.
 

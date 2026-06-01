@@ -35,14 +35,14 @@ def test_bedrock_client_builds_converse_request_with_image(tmp_path: Path) -> No
     llm = BedrockLLMClient(client=fake_client)
 
     result = llm.complete(
-        model_id="anthropic.claude-haiku-4-5-20251001-v1:0",
+        model_id="eu.anthropic.claude-haiku-4-5-20251001-v1:0",
         system_prompt="system",
         user_text="summarize",
         images=[ImageInput(path=image_path, media_type="image/jpeg")],
     )
 
     assert result == "Перевірений дайджест"
-    assert fake_client.request["modelId"] == "anthropic.claude-haiku-4-5-20251001-v1:0"
+    assert fake_client.request["modelId"] == "eu.anthropic.claude-haiku-4-5-20251001-v1:0"
     assert fake_client.request["system"] == [{"text": "system"}]
     content = fake_client.request["messages"][0]["content"]
     assert content[0]["image"]["format"] == "jpeg"

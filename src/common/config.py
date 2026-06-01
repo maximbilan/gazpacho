@@ -8,8 +8,8 @@ from typing import Literal
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
 
-DEFAULT_SUMMARY_MODEL = "anthropic.claude-haiku-4-5-20251001-v1:0"
-DEFAULT_QA_MODEL = "anthropic.claude-sonnet-4-6"
+DEFAULT_SUMMARY_MODEL = "eu.anthropic.claude-haiku-4-5-20251001-v1:0"
+DEFAULT_QA_MODEL = "eu.anthropic.claude-sonnet-4-6"
 
 
 class AppConfig(BaseModel):
