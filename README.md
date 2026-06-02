@@ -1,4 +1,4 @@
-# Gazpacho
+# Gazpacho 🥫🥣
 
 Personal Telegram digest bot for Spanish school updates, summarized in Ukrainian.
 
