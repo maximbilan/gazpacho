@@ -22,7 +22,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 @dataclass(frozen=True)
-class WeeklyDigestCredentials:
+class ScheduledDigestCredentials:
     telegram_api_id: int
     telegram_api_hash: str
     telethon_string_session: str
@@ -31,7 +31,7 @@ class WeeklyDigestCredentials:
 
 
 @dataclass(frozen=True)
-class WeeklyDigestResult:
+class ScheduledDigestResult:
     messages_read: int
     images_downloaded: int
     digest_chars: int
@@ -39,14 +39,14 @@ class WeeklyDigestResult:
     stored_run_id: str | None = None
 
 
-async def run_weekly_digest(
+async def run_scheduled_digest(
     config: AppConfig,
-    credentials: WeeklyDigestCredentials,
+    credentials: ScheduledDigestCredentials,
     *,
     download_dir: Path,
     send_digest: bool = True,
     storage: DigestStorage | None = None,
-) -> WeeklyDigestResult:
+) -> ScheduledDigestResult:
     async with TelegramReader(
         credentials.telegram_api_id,
         credentials.telegram_api_hash,
@@ -89,7 +89,7 @@ async def run_weekly_digest(
         stored_run_id = stored_run.run_id
         logger.info("Stored digest run %s", stored_run_id)
 
-    return WeeklyDigestResult(
+    return ScheduledDigestResult(
         messages_read=len(reader_result.messages),
         images_downloaded=len(reader_result.images),
         digest_chars=len(digest),
@@ -109,7 +109,7 @@ def handler(event: dict[str, Any], _context: Any) -> dict[str, Any]:
     if config.llm_provider == "openai":
         openai_api_key = secrets.require_openai().openai_api_key
 
-    credentials = WeeklyDigestCredentials(
+    credentials = ScheduledDigestCredentials(
         telegram_api_id=reader_secrets.telegram_api_id,
         telegram_api_hash=reader_secrets.telegram_api_hash,
         telethon_string_session=reader_secrets.telethon_string_session,
@@ -126,7 +126,7 @@ def handler(event: dict[str, Any], _context: Any) -> dict[str, Any]:
     )
     with TemporaryDirectory(prefix="gazpacho-scheduled-") as temp_dir:
         result = asyncio.run(
-            run_weekly_digest(
+            run_scheduled_digest(
                 config,
                 credentials,
                 download_dir=Path(temp_dir),

@@ -73,7 +73,6 @@ Globals:
         SECRETS_MANAGER_SECRET_ID: !Ref SecretsManagerSecretId
         DYNAMODB_TABLE_NAME: !Ref DynamoDbTableName
         SCHEDULED_DIGEST_FUNCTION_NAME: !Ref ScheduledDigestFunctionName
-        WEEKLY_DIGEST_FUNCTION_NAME: !Ref ScheduledDigestFunctionName
 
 Resources:
   GazpachoHttpApi:
