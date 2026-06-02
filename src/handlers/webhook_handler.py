@@ -108,7 +108,7 @@ def _send_latest_summary(config: AppConfig, notifier: TelegramBotNotifier, chat_
 
 
 def _start_refresh(config: AppConfig) -> None:
-    function_name = config.scheduled_digest_function_name or config.weekly_digest_function_name
+    function_name = config.scheduled_digest_function_name
     if not function_name:
         raise RuntimeError("SCHEDULED_DIGEST_FUNCTION_NAME is not configured")
     client = boto3.client("lambda", region_name=config.aws_region)

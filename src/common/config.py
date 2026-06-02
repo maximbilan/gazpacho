@@ -26,7 +26,6 @@ class AppConfig(BaseModel):
     secrets_manager_secret_id: str = Field(default="gazpacho/secrets", min_length=1)
     dynamodb_table_name: str = Field(default="gazpacho", min_length=1)
     scheduled_digest_function_name: str | None = None
-    weekly_digest_function_name: str | None = None
 
     @field_validator("source_chat_ids", mode="before")
     @classmethod
@@ -93,8 +92,6 @@ def config_from_env(load_local_env: bool = True) -> AppConfig:
         "dynamodb_table_name": os.getenv("DYNAMODB_TABLE_NAME", "gazpacho"),
         "scheduled_digest_function_name": os.getenv("SCHEDULED_DIGEST_FUNCTION_NAME")
         or os.getenv("WEEKLY_DIGEST_FUNCTION_NAME"),
-        "weekly_digest_function_name": os.getenv("WEEKLY_DIGEST_FUNCTION_NAME")
-        or os.getenv("SCHEDULED_DIGEST_FUNCTION_NAME"),
     }
     try:
         return AppConfig.model_validate(data)

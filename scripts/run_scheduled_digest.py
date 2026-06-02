@@ -45,13 +45,13 @@ def main() -> int:
 
     from src.common.config import config_from_env
     from src.common.storage import DigestStorage
-    from src.handlers.weekly_digest_handler import (
-        WeeklyDigestCredentials,
-        run_weekly_digest,
+    from src.handlers.scheduled_digest_handler import (
+        ScheduledDigestCredentials,
+        run_scheduled_digest,
     )
 
     config = config_from_env()
-    credentials = WeeklyDigestCredentials(
+    credentials = ScheduledDigestCredentials(
         telegram_api_id=int(required_env("TELEGRAM_API_ID")),
         telegram_api_hash=required_env("TELEGRAM_API_HASH"),
         telethon_string_session=required_env("TELETHON_STRING_SESSION"),
@@ -66,7 +66,7 @@ def main() -> int:
         else None
     )
     result = asyncio.run(
-        run_weekly_digest(
+        run_scheduled_digest(
             config,
             credentials,
             download_dir=download_dir,

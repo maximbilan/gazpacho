@@ -8,4 +8,4 @@ COPY src ./src
 RUN python -m pip install --upgrade pip \
     && python -m pip install .
 
-CMD ["src.handlers.weekly_digest_handler.handler"]
+CMD ["src.handlers.scheduled_digest_handler.handler"]

@@ -271,17 +271,17 @@ The script prints one normalized JSON message per line and a final JSON object w
 After `.env` has Telegram, target chat, source chat, and LLM settings, run the local end-to-end digest:
 
 ```bash
-python scripts/run_weekly_digest.py
+python scripts/run_scheduled_digest.py
 ```
 
-The script name is kept for compatibility, but the deployed schedule is configured independently with `SCHEDULE_HOUR` and `SCHEDULE_MINUTE` and can run daily or at any other EventBridge cron cadence.
+The deployed schedule is configured independently with `SCHEDULE_HOUR` and `SCHEDULE_MINUTE` and can run daily or at any other EventBridge cron cadence.
 
 Use `--dry-run` to read chats and summarize without sending the digest to Telegram.
 
 Use `--store` to also write the digest run to DynamoDB:
 
 ```bash
-python scripts/run_weekly_digest.py --store
+python scripts/run_scheduled_digest.py --store
 ```
 
 ## Security Notes
