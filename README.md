@@ -165,7 +165,7 @@ Required local/cloud config:
 - `SOURCE_LANG`, default `es`
 - `OUTPUT_LANG`, default `uk`
 - `LOOKBACK_DAYS`, default `7`
-- `SCHEDULE_HOUR`, default `18` UTC
+- `SCHEDULE_HOUR`, default `16` UTC for 18:00 Europe/Madrid during CEST
 - `SCHEDULE_MINUTE`, default `0`
 - `LLM_PROVIDER`, default `openai`
 - `LLM_MODEL_SUMMARY`
@@ -201,7 +201,7 @@ Required GitHub environment variables:
 - `AWS_REGION`, default `eu-west-1`
 - `SOURCE_CHAT_IDS`
 - `TARGET_CHAT_IDS`
-- `SCHEDULE_HOUR`, default `18` UTC
+- `SCHEDULE_HOUR`, default `16` UTC for 18:00 Europe/Madrid during CEST
 - `SCHEDULE_MINUTE`, default `0`
 - `LLM_PROVIDER`, default `openai`
 - `LLM_MODEL_SUMMARY`, default `gpt-4.1-mini`
