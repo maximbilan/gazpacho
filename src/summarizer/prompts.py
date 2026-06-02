@@ -23,19 +23,19 @@ def build_summary_prompt(
     *,
     source_lang: str,
     output_lang: str,
-    lookback_days: int,
+    window_label: str,
 ) -> str:
     if not messages:
         return (
-            f"No Telegram text messages were found in the last {lookback_days} days. "
+            f"No Telegram text messages were found in this window: {window_label}. "
             "If images are attached, inspect them. Otherwise write a short Ukrainian "
-            "note that there was nothing important this week."
+            "note that there was nothing important in this period."
         )
 
     lines = [
         f"Source language: {source_lang}",
         f"Output language: {output_lang}",
-        f"Window: last {lookback_days} days",
+        f"Window: {window_label}",
         "",
         "Produce a Ukrainian digest with these sections, omitting empty sections:",
         "❗ Потребує дії",

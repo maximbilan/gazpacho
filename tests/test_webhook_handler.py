@@ -216,6 +216,17 @@ def test_answer_question_uses_context_and_appends_conversation(monkeypatch) -> N
             self.appended: dict | None = None
             storage_instances.append(self)
 
+        def get_digest_runs(self, *, include_raw_messages: bool = True):
+            assert include_raw_messages is False
+            return [
+                {
+                    "summary": "Минулого тижня була форма.",
+                },
+                {
+                    "summary": "Завтра екскурсія.",
+                },
+            ]
+
         def get_latest_digest_run(self):
             return {
                 "summary": "Завтра екскурсія.",
@@ -277,4 +288,5 @@ def test_answer_question_uses_context_and_appends_conversation(monkeypatch) -> N
     assert fake_llm.request is not None
     assert fake_llm.request["model_id"] == "gpt-5-mini"
     assert "Чи завтра екскурсія?" in fake_llm.request["user_text"]
+    assert "Минулого тижня була форма." in fake_llm.request["user_text"]
     assert "Excursión mañana." in fake_llm.request["user_text"]

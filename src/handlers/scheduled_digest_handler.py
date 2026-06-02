@@ -5,6 +5,7 @@ import json
 import logging
 import os
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
@@ -36,6 +37,8 @@ class ScheduledDigestResult:
     images_downloaded: int
     digest_chars: int
     telegram_parts_sent: int
+    window_start: str
+    window_end: str
     stored_run_id: str | None = None
 
 
@@ -47,14 +50,22 @@ async def run_scheduled_digest(
     send_digest: bool = True,
     storage: DigestStorage | None = None,
 ) -> ScheduledDigestResult:
+    window_end = datetime.now(timezone.utc)
+    window_start, used_latest_cursor = _resolve_window_start(config, storage, window_end)
+    window_label = (
+        f"since the previous successful digest at {window_start.isoformat()}"
+        if used_latest_cursor
+        else f"last {config.lookback_days} days"
+    )
+
     async with TelegramReader(
         credentials.telegram_api_id,
         credentials.telegram_api_hash,
         credentials.telethon_string_session,
     ) as reader:
-        reader_result = await reader.read_recent(
+        reader_result = await reader.read_since(
             config.source_chat_ids,
-            lookback_days=config.lookback_days,
+            window_start=window_start,
             download_dir=download_dir,
         )
 
@@ -67,6 +78,7 @@ async def run_scheduled_digest(
     digest = Summarizer(config, openai_api_key=credentials.openai_api_key).summarize(
         reader_result.messages,
         reader_result.images,
+        window_label=window_label,
     )
 
     parts_sent = 0
@@ -85,6 +97,8 @@ async def run_scheduled_digest(
             raw_messages=reader_result.messages,
             images=reader_result.images,
             lookback_days=config.lookback_days,
+            window_start=window_start.isoformat(),
+            window_end=window_end.isoformat(),
         )
         stored_run_id = stored_run.run_id
         logger.info("Stored digest run %s", stored_run_id)
@@ -94,8 +108,47 @@ async def run_scheduled_digest(
         images_downloaded=len(reader_result.images),
         digest_chars=len(digest),
         telegram_parts_sent=parts_sent,
+        window_start=window_start.isoformat(),
+        window_end=window_end.isoformat(),
         stored_run_id=stored_run_id,
     )
+
+
+def _resolve_window_start(
+    config: AppConfig,
+    storage: DigestStorage | None,
+    window_end: datetime,
+) -> tuple[datetime, bool]:
+    fallback_start = window_end - timedelta(days=config.lookback_days)
+    if storage is None:
+        return fallback_start, False
+
+    latest = storage.get_latest_digest_run()
+    if not latest:
+        return fallback_start, False
+
+    cursor = _parse_utc_datetime(
+        str(latest.get("window_end") or latest.get("generated_at") or "")
+    )
+    if cursor is None:
+        return fallback_start, False
+
+    cursor = cursor.astimezone(timezone.utc)
+    if fallback_start < cursor < window_end:
+        return cursor, True
+    return fallback_start, False
+
+
+def _parse_utc_datetime(value: str) -> datetime | None:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
 
 
 def handler(event: dict[str, Any], _context: Any) -> dict[str, Any]:
@@ -143,6 +196,8 @@ def handler(event: dict[str, Any], _context: Any) -> dict[str, Any]:
                 "images_downloaded": result.images_downloaded,
                 "digest_chars": result.digest_chars,
                 "telegram_parts_sent": result.telegram_parts_sent,
+                "window_start": result.window_start,
+                "window_end": result.window_end,
                 "stored_run_id": result.stored_run_id,
             }
         ),

@@ -73,7 +73,8 @@ Daily digest flow:
 ```text
 EventBridge cron, configured with SCHEDULE_HOUR/SCHEDULE_MINUTE in UTC
   -> ScheduledDigest Lambda container image
-       -> Telethon user client reads the last LOOKBACK_DAYS from source chats
+       -> Telethon user client reads messages since the previous stored digest
+          or falls back to LOOKBACK_DAYS
        -> downloads photo/image notices to /tmp
        -> configured vision LLM summarizes and translates into Ukrainian
        -> Telegram Bot API sends digest to each TARGET_CHAT_IDS recipient
@@ -85,9 +86,9 @@ Q&A flow:
 ```text
 Telegram bot webhook
   -> API Gateway HTTP API
-  -> Webhook Lambda zip
+       -> Webhook Lambda zip
        -> verifies Telegram secret-token header
-       -> reads latest digest, raw messages, and short chat history from DynamoDB
+       -> reads all stored digest summaries, latest raw messages, and short chat history from DynamoDB
        -> configured LLM answers in Ukrainian
        -> Telegram Bot API replies
 ```
@@ -164,7 +165,7 @@ Required local/cloud config:
 - `TIMEZONE`, default `Europe/Madrid`
 - `SOURCE_LANG`, default `es`
 - `OUTPUT_LANG`, default `uk`
-- `LOOKBACK_DAYS`, default `7`
+- `LOOKBACK_DAYS`, default `7`; first-run and maximum catch-up window
 - `SCHEDULE_HOUR`, default `16` UTC for 18:00 Europe/Madrid during CEST
 - `SCHEDULE_MINUTE`, default `0`
 - `LLM_PROVIDER`, default `openai`
@@ -190,7 +191,7 @@ Pull requests run the `CI` GitHub Actions workflow, which installs the package o
 - `/start` explains the bot and prints the current Telegram `chat_id`.
 - `/summary` resends the latest stored digest.
 - `/refresh` asynchronously invokes the scheduled digest Lambda to read the configured source chats again.
-- Any non-command text message is treated as a question about recent school updates. The bot answers in Ukrainian using the latest stored digest, raw message context, and short per-chat conversation history.
+- Any non-command text message is treated as a question about school updates. The bot answers in Ukrainian using all stored digest summaries, the latest raw message context, and short per-chat conversation history.
 
 ## Deployment
 
@@ -201,6 +202,7 @@ Required GitHub environment variables:
 - `AWS_REGION`, default `eu-west-1`
 - `SOURCE_CHAT_IDS`
 - `TARGET_CHAT_IDS`
+- `LOOKBACK_DAYS`, default `7`; used as the first-run and maximum catch-up window. After a successful stored digest, the next scheduled digest reads only messages since that stored run.
 - `SCHEDULE_HOUR`, default `16` UTC for 18:00 Europe/Madrid during CEST
 - `SCHEDULE_MINUTE`, default `0`
 - `LLM_PROVIDER`, default `openai`
@@ -275,6 +277,8 @@ python scripts/run_scheduled_digest.py
 ```
 
 The deployed schedule is configured independently with `SCHEDULE_HOUR` and `SCHEDULE_MINUTE` and can run daily or at any other EventBridge cron cadence.
+
+When storage is enabled, each scheduled digest analyzes only Telegram messages posted since the previous successful stored digest. If there is no previous run, or the previous run is older than `LOOKBACK_DAYS`, it falls back to the configured `LOOKBACK_DAYS` window.
 
 Use `--dry-run` to read chats and summarize without sending the digest to Telegram.
 

@@ -9,7 +9,7 @@ from src.summarizer.prompts import SYSTEM_PROMPT, build_summary_prompt
 
 
 EMPTY_WEEK_DIGEST = (
-    "Цього тижня в шкільних чатах не знайдено "
+    "За цей період у шкільних чатах не знайдено "
     "важливих оновлень."
 )
 
@@ -27,15 +27,18 @@ class Summarizer:
         self,
         messages: list[NormalizedMessage],
         images: list[DownloadedImage],
+        *,
+        window_label: str | None = None,
     ) -> str:
         if not messages and not images:
             return EMPTY_WEEK_DIGEST
 
+        window_label = window_label or f"last {self.config.lookback_days} days"
         prompt = build_summary_prompt(
             messages,
             source_lang=self.config.source_lang,
             output_lang=self.config.output_lang,
-            lookback_days=self.config.lookback_days,
+            window_label=window_label,
         )
         image_inputs = [
             ImageInput(path=Path(image.path), media_type=image.mime_type)

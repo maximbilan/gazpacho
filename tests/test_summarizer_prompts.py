@@ -19,9 +19,10 @@ def test_summary_prompt_includes_ukrainian_digest_sections() -> None:
         ],
         source_lang="es",
         output_lang="uk",
-        lookback_days=7,
+        window_label="since the previous successful digest at 2026-06-01T07:00:00+00:00",
     )
 
+    assert "Window: since the previous successful digest" in prompt
     assert "❗ Потребує дії" in prompt
     assert "📅 Дати та події" in prompt
     assert "ℹ️ Інформація" in prompt
@@ -29,4 +30,4 @@ def test_summary_prompt_includes_ukrainian_digest_sections() -> None:
 
 
 def test_empty_week_digest_is_ukrainian() -> None:
-    assert "цього тижня" in EMPTY_WEEK_DIGEST.lower()
+    assert "за цей період" in EMPTY_WEEK_DIGEST.lower()
