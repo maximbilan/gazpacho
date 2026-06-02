@@ -188,7 +188,7 @@ def _openai_model_supports_temperature(model_id: str) -> bool:
 
 
 def make_llm_client(
-    provider: Literal["bedrock", "openai", "anthropic"],
+    provider: Literal["bedrock", "openai"],
     region_name: str | None = None,
     openai_api_key: str | None = None,
 ) -> BedrockLLMClient | OpenAILLMClient:
@@ -196,4 +196,4 @@ def make_llm_client(
         return BedrockLLMClient(region_name=region_name)
     if provider == "openai":
         return OpenAILLMClient(api_key=openai_api_key)
-    raise NotImplementedError("Direct Anthropic API support is not implemented yet")
+    raise ValueError(f"Unsupported LLM provider: {provider}")
