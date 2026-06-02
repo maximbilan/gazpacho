@@ -59,7 +59,7 @@ jobs:
           SOURCE_CHAT_IDS: ${{ vars.SOURCE_CHAT_IDS }}
           TARGET_CHAT_IDS: ${{ vars.TARGET_CHAT_IDS || vars.TARGET_CHAT_ID }}
           SCHEDULE_MINUTE: ${{ vars.SCHEDULE_MINUTE || '0' }}
-          SCHEDULE_HOUR: ${{ vars.SCHEDULE_HOUR || '18' }}
+          SCHEDULE_HOUR: ${{ vars.SCHEDULE_HOUR || '16' }}
           LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'openai' }}
           LLM_MODEL_SUMMARY: ${{ vars.LLM_MODEL_SUMMARY || 'gpt-4.1-mini' }}
           LLM_MODEL_QA: ${{ vars.LLM_MODEL_QA || 'gpt-5-mini' }}

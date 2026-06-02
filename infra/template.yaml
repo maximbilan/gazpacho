@@ -32,7 +32,7 @@ Parameters:
     Default: "0"
   ScheduleHour:
     Type: String
-    Default: "18"
+    Default: "16"
   LlmProvider:
     Type: String
     Default: openai
