@@ -39,7 +39,6 @@ Parameters:
     AllowedValues:
       - openai
       - bedrock
-      - anthropic
   LlmModelSummary:
     Type: String
     Default: gpt-4.1-mini
@@ -68,7 +67,6 @@ Globals:
         SOURCE_LANG: !Ref SourceLang
         OUTPUT_LANG: !Ref OutputLang
         LOOKBACK_DAYS: !Ref LookbackDays
-        SCHEDULE_CRON: !Sub cron(${ScheduleMinute} ${ScheduleHour} * * ? *)
         LLM_PROVIDER: !Ref LlmProvider
         LLM_MODEL_SUMMARY: !Ref LlmModelSummary
         LLM_MODEL_QA: !Ref LlmModelQa

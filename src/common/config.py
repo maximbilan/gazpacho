@@ -18,9 +18,8 @@ class AppConfig(BaseModel):
     timezone: str = "Europe/Madrid"
     source_lang: str = "es"
     output_lang: str = "uk"
-    schedule_cron: str = "cron(0 18 * * ? *)"
     lookback_days: int = Field(default=7, ge=1, le=31)
-    llm_provider: Literal["bedrock", "openai", "anthropic"] = "openai"
+    llm_provider: Literal["bedrock", "openai"] = "openai"
     llm_model_summary: str = DEFAULT_SUMMARY_MODEL
     llm_model_qa: str = DEFAULT_QA_MODEL
     aws_region: str | None = None
@@ -38,10 +37,6 @@ class AppConfig(BaseModel):
     @classmethod
     def parse_target_chat_ids(cls, value: object) -> list[str]:
         return _parse_string_list(value, "TARGET_CHAT_IDS")
-
-    @property
-    def target_chat_id(self) -> str:
-        return self.target_chat_ids[0]
 
 
 def _parse_string_list(value: object, env_name: str) -> list[str]:
@@ -87,7 +82,6 @@ def config_from_env(load_local_env: bool = True) -> AppConfig:
         "timezone": os.getenv("TIMEZONE", "Europe/Madrid"),
         "source_lang": os.getenv("SOURCE_LANG", "es"),
         "output_lang": os.getenv("OUTPUT_LANG", "uk"),
-        "schedule_cron": os.getenv("SCHEDULE_CRON", "cron(0 18 * * ? *)"),
         "lookback_days": os.getenv("LOOKBACK_DAYS", "7"),
         "llm_provider": os.getenv("LLM_PROVIDER", "openai"),
         "llm_model_summary": os.getenv("LLM_MODEL_SUMMARY", DEFAULT_SUMMARY_MODEL),
