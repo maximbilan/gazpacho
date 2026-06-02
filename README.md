@@ -27,7 +27,7 @@ AWS deployment overview:
 flowchart LR
   subgraph Telegram
     SourceChats["School Telegram chats"]
-    Bot["@gazpacho26_bot"]
+    Bot["@your_bot"]
     Recipients["Configured private chats"]
   end
 
