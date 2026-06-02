@@ -40,11 +40,11 @@ def test_telegram_notifier_sends_to_requested_chat_id() -> None:
     client = FakeTelegramClient()
     notifier = TelegramBotNotifier("token", client=client)
 
-    notifier.send_text("200911762", "hello")
+    notifier.send_text("222222222", "hello")
 
     assert client.payloads == [
         {
-            "chat_id": "200911762",
+            "chat_id": "222222222",
             "text": "hello",
             "disable_web_page_preview": True,
         }
