@@ -21,6 +21,53 @@ Gazpacho supports the full production flow:
 
 ## Architecture
 
+AWS deployment overview:
+
+```mermaid
+flowchart LR
+  subgraph Telegram
+    SourceChats["School Telegram chats"]
+    Bot["@gazpacho26_bot"]
+    Recipients["Configured private chats"]
+  end
+
+  subgraph AWS
+    EventBridge["EventBridge daily schedule"]
+    ScheduledLambda["ScheduledDigest Lambda<br/>container image"]
+    ApiGateway["API Gateway HTTP API"]
+    WebhookLambda["Webhook Lambda<br/>zip package"]
+    DynamoDB[("DynamoDB<br/>digest + Q&A context")]
+    Secrets[("Secrets Manager<br/>Telegram + LLM secrets")]
+  end
+
+  subgraph AI
+    VisionLLM["OpenAI or Bedrock<br/>vision-capable model"]
+  end
+
+  EventBridge --> ScheduledLambda
+  ScheduledLambda -- "MTProto user session" --> SourceChats
+  ScheduledLambda --> Secrets
+  ScheduledLambda -- "messages + downloaded images" --> VisionLLM
+  VisionLLM -- "Ukrainian digest" --> ScheduledLambda
+  ScheduledLambda --> DynamoDB
+  ScheduledLambda -- "send digest" --> Bot
+  Bot --> Recipients
+
+  Recipients -- "questions and commands" --> Bot
+  Bot -- "Telegram webhook" --> ApiGateway
+  ApiGateway --> WebhookLambda
+  WebhookLambda --> Secrets
+  WebhookLambda --> DynamoDB
+  WebhookLambda -- "Q&A prompt" --> VisionLLM
+  VisionLLM -- "Ukrainian answer" --> WebhookLambda
+  WebhookLambda -- "reply" --> Bot
+  Bot --> Recipients
+
+  WebhookLambda -- "/refresh async invoke" --> ScheduledLambda
+```
+
+The Telegram bot never reads source chats. Only the Telethon user-client session in the scheduled Lambda reads the configured school chats.
+
 Daily digest flow:
 
 ```text
