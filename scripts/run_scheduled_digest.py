@@ -80,6 +80,8 @@ def main() -> int:
         f"images={result.images_downloaded} "
         f"digest_chars={result.digest_chars} "
         f"telegram_parts={result.telegram_parts_sent} "
+        f"window_start={result.window_start} "
+        f"window_end={result.window_end} "
         f"stored_run_id={result.stored_run_id or ''} "
         f"download_dir={download_dir}"
     )

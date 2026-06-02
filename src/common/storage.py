@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 import boto3
+from boto3.dynamodb.conditions import Key
 
 from src.reader.models import DownloadedImage, NormalizedMessage
 
@@ -38,6 +39,8 @@ class DigestStorage:
         raw_messages: list[NormalizedMessage],
         images: list[DownloadedImage],
         lookback_days: int,
+        window_start: str | None = None,
+        window_end: str | None = None,
     ) -> StoredDigestRun:
         generated_at = datetime.now(timezone.utc).isoformat()
         run_id = f"digest#{generated_at}"
@@ -59,6 +62,8 @@ class DigestStorage:
             "run_id": run_id,
             "generated_at": generated_at,
             "lookback_days": lookback_days,
+            "window_start": window_start,
+            "window_end": window_end,
             "summary": summary,
             "raw_messages": message_items,
             "images": image_items,
@@ -89,6 +94,53 @@ class DigestStorage:
 
         run_response = self.table.get_item(Key={"pk": RUN_PK, "sk": run_id})
         return run_response.get("Item")
+
+    def get_digest_runs(self, *, include_raw_messages: bool = True) -> list[dict[str, Any]]:
+        attribute_names = {
+            "#pk": "pk",
+            "#sk": "sk",
+            "#entity_type": "entity_type",
+            "#run_id": "run_id",
+            "#generated_at": "generated_at",
+            "#window_start": "window_start",
+            "#window_end": "window_end",
+            "#summary": "summary",
+        }
+        projected_attributes = [
+            "#pk",
+            "#sk",
+            "#entity_type",
+            "#run_id",
+            "#generated_at",
+            "#window_start",
+            "#window_end",
+            "#summary",
+        ]
+        if include_raw_messages:
+            attribute_names["#raw_messages"] = "raw_messages"
+            projected_attributes.append("#raw_messages")
+
+        items: list[dict[str, Any]] = []
+        query_kwargs: dict[str, Any] = {
+            "KeyConditionExpression": Key("pk").eq(RUN_PK) & Key("sk").begins_with("digest#"),
+            "ScanIndexForward": True,
+            "ProjectionExpression": ", ".join(projected_attributes),
+            "ExpressionAttributeNames": attribute_names,
+        }
+
+        while True:
+            response = self.table.query(**query_kwargs)
+            items.extend(
+                item
+                for item in response.get("Items", [])
+                if isinstance(item, dict) and item.get("entity_type") == "digest_run"
+            )
+            last_key = response.get("LastEvaluatedKey")
+            if not last_key:
+                break
+            query_kwargs["ExclusiveStartKey"] = last_key
+
+        return items
 
     def get_recent_conversation(self, chat_id: str) -> list[dict[str, str]]:
         response = self.table.get_item(

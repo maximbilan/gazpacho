@@ -48,7 +48,7 @@ def handler(event: dict[str, Any], _context: Any) -> dict[str, Any]:
             notifier.send_text(
                 chat_id,
                 "Я Gazpacho. Я надсилаю український дайджест шкільних повідомлень "
-                "і відповідаю на питання про останні збережені оновлення.\n\n"
+                "і відповідаю на питання про збережені оновлення.\n\n"
                 f"chat_id: {chat_id}",
             )
         elif text.startswith("/summary"):
@@ -126,7 +126,9 @@ def _answer_question(
     question: str,
 ) -> str:
     storage = DigestStorage(config.dynamodb_table_name, region_name=config.aws_region)
+    digest_runs = storage.get_digest_runs(include_raw_messages=False)
     latest = storage.get_latest_digest_run()
+    raw_message_runs = [latest] if latest else []
     recent_conversation = storage.get_recent_conversation(chat_id)
 
     if config.llm_provider == "openai" and not openai_api_key:
@@ -142,7 +144,8 @@ def _answer_question(
         system_prompt=QA_SYSTEM_PROMPT,
         user_text=build_qa_prompt(
             question=question,
-            latest_digest=latest,
+            digest_runs=digest_runs,
+            raw_message_runs=raw_message_runs,
             recent_conversation=recent_conversation,
         ),
         max_tokens=1200,

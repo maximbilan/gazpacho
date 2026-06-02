@@ -27,6 +27,7 @@ Parameters:
   LookbackDays:
     Type: Number
     Default: 7
+    Description: First-run and maximum catch-up window. Stored scheduled runs read only new messages.
   ScheduleMinute:
     Type: String
     Default: "0"

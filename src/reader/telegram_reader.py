@@ -110,6 +110,22 @@ class TelegramReader:
             window_end = window_end.replace(tzinfo=timezone.utc)
         window_start = window_end - timedelta(days=lookback_days)
 
+        return await self.read_since(
+            chat_refs,
+            window_start=window_start,
+            download_dir=download_dir,
+        )
+
+    async def read_since(
+        self,
+        chat_refs: list[str],
+        *,
+        window_start: datetime,
+        download_dir: Path,
+    ) -> ReaderResult:
+        if window_start.tzinfo is None:
+            window_start = window_start.replace(tzinfo=timezone.utc)
+
         download_dir.mkdir(parents=True, exist_ok=True)
         result = ReaderResult()
 
