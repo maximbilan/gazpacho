@@ -82,18 +82,20 @@ async def run_scheduled_digest(
     )
 
     parts_sent = 0
-    if send_digest:
+    if send_digest and digest:
         notifier = TelegramBotNotifier(credentials.telegram_bot_token)
         try:
             for target_chat_id in config.target_chat_ids:
                 parts_sent += notifier.send_text(target_chat_id, digest).parts_sent
         finally:
             notifier.close()
+    elif send_digest:
+        logger.info("Nothing to summarize for this window; skipping Telegram send")
 
     stored_run_id = None
     if storage is not None:
         stored_run = storage.store_digest_run(
-            summary=digest,
+            summary=digest or "",
             raw_messages=reader_result.messages,
             images=reader_result.images,
             lookback_days=config.lookback_days,
@@ -106,7 +108,7 @@ async def run_scheduled_digest(
     return ScheduledDigestResult(
         messages_read=len(reader_result.messages),
         images_downloaded=len(reader_result.images),
-        digest_chars=len(digest),
+        digest_chars=len(digest) if digest else 0,
         telegram_parts_sent=parts_sent,
         window_start=window_start.isoformat(),
         window_end=window_end.isoformat(),

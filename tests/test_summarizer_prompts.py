@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from src.reader.models import NormalizedMessage
 from src.summarizer.prompts import build_summary_prompt
-from src.summarizer.summarizer import EMPTY_WEEK_DIGEST
 
 
 def test_summary_prompt_includes_ukrainian_digest_sections() -> None:
@@ -27,7 +26,3 @@ def test_summary_prompt_includes_ukrainian_digest_sections() -> None:
     assert "📅 Дати та події" in prompt
     assert "ℹ️ Інформація" in prompt
     assert "Traer autorización firmada" in prompt
-
-
-def test_empty_week_digest_is_ukrainian() -> None:
-    assert "за цей період" in EMPTY_WEEK_DIGEST.lower()
