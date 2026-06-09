@@ -99,6 +99,81 @@ def test_run_scheduled_digest_reads_since_latest_stored_digest(monkeypatch, tmp_
     assert result.window_end == "2026-06-02T16:00:00+00:00"
 
 
+def test_run_scheduled_digest_skips_send_when_nothing_to_summarize(
+    monkeypatch, tmp_path
+) -> None:
+    sent: list[tuple[str, str]] = []
+    stored: dict[str, object] = {}
+
+    class FakeReader:
+        def __init__(self, *_args) -> None:
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def read_since(self, _chat_refs, *, window_start, download_dir):
+            return ReaderResult()
+
+    class FakeSummarizer:
+        def __init__(self, *_args, **_kwargs) -> None:
+            pass
+
+        def summarize(self, messages, images, *, window_label=None):
+            return None
+
+    class FakeNotifier:
+        def __init__(self, *_args) -> None:
+            raise AssertionError("notifier should not be constructed when digest is empty")
+
+    class FakeStorage:
+        def get_latest_digest_run(self):
+            return None
+
+        def store_digest_run(self, **kwargs):
+            stored.update(kwargs)
+            return type("Stored", (), {"run_id": "digest#empty"})()
+
+    monkeypatch.setattr(scheduled_digest_handler, "datetime", FixedDateTime)
+    monkeypatch.setattr(scheduled_digest_handler, "TelegramReader", FakeReader)
+    monkeypatch.setattr(scheduled_digest_handler, "Summarizer", FakeSummarizer)
+    monkeypatch.setattr(scheduled_digest_handler, "TelegramBotNotifier", FakeNotifier)
+
+    config = AppConfig.model_validate(
+        {
+            "source_chat_ids": "@school",
+            "target_chat_ids": "111111111",
+            "lookback_days": 7,
+        }
+    )
+    credentials = ScheduledDigestCredentials(
+        telegram_api_id=1,
+        telegram_api_hash="hash",
+        telethon_string_session="session",
+        telegram_bot_token="bot",
+        openai_api_key="openai",
+    )
+
+    result = asyncio.run(
+        run_scheduled_digest(
+            config,
+            credentials,
+            download_dir=Path(tmp_path),
+            send_digest=True,
+            storage=FakeStorage(),
+        )
+    )
+
+    assert sent == []
+    assert result.telegram_parts_sent == 0
+    assert result.digest_chars == 0
+    assert stored["summary"] == ""
+    assert result.stored_run_id == "digest#empty"
+
+
 def test_resolve_window_start_caps_stale_latest_digest() -> None:
     class FakeStorage:
         def get_latest_digest_run(self):

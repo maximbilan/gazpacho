@@ -30,7 +30,8 @@ def main() -> int:
 
     config = config_from_env()
     summarizer = Summarizer(config, openai_api_key=os.getenv("OPENAI_API_KEY"))
-    print(summarizer.summarize(messages, images))
+    digest = summarizer.summarize(messages, images)
+    print(digest if digest is not None else "(no messages or images to summarize)")
     return 0
 
 

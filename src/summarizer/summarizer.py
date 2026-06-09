@@ -8,12 +8,6 @@ from src.reader.models import DownloadedImage, NormalizedMessage
 from src.summarizer.prompts import SYSTEM_PROMPT, build_summary_prompt
 
 
-EMPTY_WEEK_DIGEST = (
-    "За цей період у шкільних чатах не знайдено "
-    "важливих оновлень."
-)
-
-
 class Summarizer:
     def __init__(self, config: AppConfig, openai_api_key: str | None = None) -> None:
         self.config = config
@@ -29,9 +23,9 @@ class Summarizer:
         images: list[DownloadedImage],
         *,
         window_label: str | None = None,
-    ) -> str:
+    ) -> str | None:
         if not messages and not images:
-            return EMPTY_WEEK_DIGEST
+            return None
 
         window_label = window_label or f"last {self.config.lookback_days} days"
         prompt = build_summary_prompt(
